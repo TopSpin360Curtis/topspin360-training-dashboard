@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f5f8fc;
+  --foreground: #10213a;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(26, 111, 196, 0.12), transparent 30%),
+    linear-gradient(180deg, #f5f8fc 0%, #ffffff 100%);
+  color: var(--foreground);
+  min-height: 100vh;
+}
+
+* {
+  border-color: rgba(16, 33, 58, 0.08);
+}
+
+.bg-grid {
+  background-size: 26px 26px;
+}
+
+.print-panel {
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
