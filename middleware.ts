@@ -27,6 +27,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.json(
+      {
+        error: "Unauthorized. Sign in again to access protected dashboard data."
+      },
+      { status: 401 }
+    );
+  }
+
   const loginUrl = request.nextUrl.clone();
   loginUrl.pathname = "/login";
   loginUrl.searchParams.set("next", `${pathname}${search}`);

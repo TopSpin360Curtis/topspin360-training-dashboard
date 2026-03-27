@@ -6,12 +6,14 @@ import {
 } from "@/lib/sheetsClient";
 import { sampleTrainingData } from "@/lib/sampleData";
 
+export const runtime = "nodejs";
+
 export async function GET() {
-  const privateSheetId = process.env.GOOGLE_SHEET_ID;
-  const privateRange = process.env.GOOGLE_SHEET_RANGE;
+  const privateSheetId = process.env.GOOGLE_SHEET_ID?.trim();
+  const privateRange = process.env.GOOGLE_SHEET_RANGE?.trim();
   const serviceAccount = getServiceAccountCredentialsFromEnv();
-  const publicSheetId = process.env.NEXT_PUBLIC_SHEET_ID;
-  const apiKey = process.env.GOOGLE_API_KEY;
+  const publicSheetId = process.env.NEXT_PUBLIC_SHEET_ID?.trim();
+  const apiKey = process.env.GOOGLE_API_KEY?.trim();
 
   try {
     if (privateSheetId && serviceAccount) {
@@ -58,10 +60,13 @@ export async function GET() {
         ? error.message
         : "Unable to load Google Sheets data.";
 
-    return NextResponse.json({
-      data: sampleTrainingData,
-      source: "sample",
-      message: `${message} CSV upload remains available as a fallback.`
-    });
+    return NextResponse.json(
+      {
+        data: sampleTrainingData,
+        source: "sample",
+        message: `${message} CSV upload remains available as a fallback.`
+      },
+      { status: 500 }
+    );
   }
 }

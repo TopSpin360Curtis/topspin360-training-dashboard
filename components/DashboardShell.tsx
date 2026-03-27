@@ -438,13 +438,29 @@ export default function DashboardShell({
 
     try {
       const response = await fetch("/api/sheets", {
-        cache: "no-store"
+        cache: "no-store",
+        credentials: "same-origin"
       });
+      const contentType = response.headers.get("content-type") || "";
+
+      if (!contentType.includes("application/json")) {
+        throw new Error(
+          response.status === 401
+            ? "You have been signed out. Log in again, then retry Sync Sheets."
+            : `Sheets sync returned an unexpected response (${response.status}).`
+        );
+      }
+
       const payload = (await response.json()) as {
         data: TrainingSession[];
         source: DataSourceMeta["source"];
         message?: string;
+        error?: string;
       };
+
+      if (!response.ok) {
+        throw new Error(payload.error || payload.message || "Unable to sync Google Sheets.");
+      }
 
       if (Array.isArray(payload.data) && payload.data.length) {
         setData(payload.data);
@@ -468,11 +484,13 @@ export default function DashboardShell({
             "Manual sheet sync returned no valid player rows, so the current dataset was left unchanged."
         });
       }
-    } catch {
+    } catch (error) {
       setSourceMeta({
         source: "sample",
         message:
-          "Manual Sheets sync failed. The current dataset was left unchanged."
+          error instanceof Error
+            ? error.message
+            : "Manual Sheets sync failed. The current dataset was left unchanged."
       });
     } finally {
       setIsSyncingSheets(false);

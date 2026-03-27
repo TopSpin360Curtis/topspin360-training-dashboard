@@ -55,21 +55,34 @@ function normalizePrivateKey(privateKey: string) {
   return privateKey.replace(/\\n/g, "\n");
 }
 
+function unwrapQuotedValue(value: string) {
+  const trimmed = value.trim();
+
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+
+  return trimmed;
+}
+
 export function getServiceAccountCredentialsFromEnv():
   | ServiceAccountCredentials
   | null {
-  const jsonBlob = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  const jsonBlob = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim();
 
   if (jsonBlob) {
     try {
-      const parsed = JSON.parse(jsonBlob) as {
+      const parsed = JSON.parse(unwrapQuotedValue(jsonBlob)) as {
         client_email?: string;
         private_key?: string;
       };
 
       if (parsed.client_email && parsed.private_key) {
         return {
-          clientEmail: parsed.client_email,
+          clientEmail: parsed.client_email.trim(),
           privateKey: normalizePrivateKey(parsed.private_key)
         };
       }
@@ -78,8 +91,8 @@ export function getServiceAccountCredentialsFromEnv():
     }
   }
 
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.trim();
 
   if (!clientEmail || !privateKey) {
     return null;
