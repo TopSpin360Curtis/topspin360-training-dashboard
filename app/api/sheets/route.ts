@@ -9,13 +9,13 @@ import { sampleTrainingData } from "@/lib/sampleData";
 export const runtime = "nodejs";
 
 export async function GET() {
-  const privateSheetId = process.env.GOOGLE_SHEET_ID?.trim();
-  const privateRange = process.env.GOOGLE_SHEET_RANGE?.trim();
-  const serviceAccount = getServiceAccountCredentialsFromEnv();
-  const publicSheetId = process.env.NEXT_PUBLIC_SHEET_ID?.trim();
-  const apiKey = process.env.GOOGLE_API_KEY?.trim();
-
   try {
+    const privateSheetId = process.env.GOOGLE_SHEET_ID?.trim();
+    const privateRange = process.env.GOOGLE_SHEET_RANGE?.trim();
+    const serviceAccount = getServiceAccountCredentialsFromEnv();
+    const publicSheetId = process.env.NEXT_PUBLIC_SHEET_ID?.trim();
+    const apiKey = process.env.GOOGLE_API_KEY?.trim();
+
     if (privateSheetId && serviceAccount) {
       const result = await fetchPrivateGoogleSheetData(
         privateSheetId,
