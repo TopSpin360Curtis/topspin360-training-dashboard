@@ -13,6 +13,7 @@ export type RiskBand = "high" | "moderate" | "lower" | "lowest";
 export type TrendStatus = "improving" | "plateauing" | "declining";
 
 export type ReviewPriority = "high" | "monitor" | "on-track";
+export type InsightTone = "info" | "warning" | "positive";
 
 export type PlayerStats = {
   player: string;
@@ -39,6 +40,49 @@ export type LeaderboardRow = PlayerStats & {
   teamDeltaPct: number;
   reviewPriority: ReviewPriority;
   reviewReasons: string[];
+  lastSessionDate?: string;
+};
+
+export type DayOfWeekStat = {
+  day: string;
+  sessionCount: number;
+  avgRFD: number;
+  avgCCW: number;
+  avgCW: number;
+  balancePct: number;
+};
+
+export type DayOfWeekPlayerHeatmapRow = {
+  player: string;
+  sessions: number;
+  values: Record<string, number | null>;
+};
+
+export type AutoInsight = {
+  title: string;
+  body: string;
+  tone: InsightTone;
+};
+
+export type CoachNote = {
+  id: string;
+  createdAt: string;
+  playerName: string;
+  dayOfWeek: string;
+  noteText: string;
+  author: string;
+  noteDate?: string;
+};
+
+export type PlayerAlert = {
+  player: string;
+  priority: ReviewPriority;
+  reasons: string[];
+  avgRFD: number;
+  sessions: number;
+  imbalancePct: number;
+  trendDelta: number;
+  lastSessionDate?: string;
 };
 
 export type GoalTarget = {

@@ -60,14 +60,15 @@ export default function Leaderboard({
   const headings: Array<{
     label: string;
     key: SortKey;
+    className?: string;
   }> = [
     { label: "Rank", key: "rank" },
     { label: "Player", key: "player" },
     { label: "Avg RFD", key: "avgRFD" },
-    { label: "Vs Team", key: "teamDeltaPct" },
-    { label: "Balance", key: "imbalancePct" },
+    { label: "Vs Team", key: "teamDeltaPct", className: "hidden md:table-cell" },
+    { label: "Balance", key: "imbalancePct", className: "hidden md:table-cell" },
     { label: "Sessions", key: "sessions" },
-    { label: "Trend", key: "trendDelta" }
+    { label: "Trend", key: "trendDelta", className: "hidden md:table-cell" }
   ];
 
   return (
@@ -76,7 +77,10 @@ export default function Leaderboard({
         <thead className="border-b border-slate-100 bg-slate-50/80">
           <tr>
             {headings.map((heading) => (
-              <th key={heading.key} className="px-4 py-4 font-semibold text-slate-700">
+              <th
+                key={heading.key}
+                className={`px-4 py-4 font-semibold text-slate-700 ${heading.className ?? ""}`}
+              >
                 <button
                   type="button"
                   onClick={() => onSortChange(heading.key)}
@@ -109,6 +113,9 @@ export default function Leaderboard({
                   <RiskBandBadge band={row.riskBand} />
                   <TrendStatusChip status={row.trendStatus} />
                 </div>
+                {row.reviewPriority === "high" ? (
+                  <p className="mt-2 text-xs text-slate-500">{row.reviewReasons.join(" · ")}</p>
+                ) : null}
               </td>
               <td className="px-4 py-4">
                 <p className="font-semibold text-brand-ink">{formatNumber(row.avgRFD)}</p>
@@ -116,14 +123,14 @@ export default function Leaderboard({
                   Best {formatNumber(row.bestRFD)}
                 </p>
               </td>
-              <td className="px-4 py-4">
+              <td className="hidden px-4 py-4 md:table-cell">
                 <TeamAverageComparator
                   delta={row.teamDelta}
                   deltaPct={row.teamDeltaPct}
                   compact
                 />
               </td>
-              <td className="px-4 py-4">
+              <td className="hidden px-4 py-4 md:table-cell">
                 <AsymmetryIndicator
                   ccw={row.ccwAvg}
                   cw={row.cwAvg}
@@ -133,7 +140,7 @@ export default function Leaderboard({
                 />
               </td>
               <td className="px-4 py-4 text-slate-700">{row.sessions}</td>
-              <td className="px-4 py-4">
+              <td className="hidden px-4 py-4 md:table-cell">
                 <div className="space-y-2">
                   <div>{renderTrend(row.trendDelta)}</div>
                   <p className="text-xs text-slate-500">

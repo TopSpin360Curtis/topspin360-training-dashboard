@@ -63,14 +63,14 @@ export default function FilterBar({
                 <button
                   type="button"
                   onClick={onSelectFullTeam}
-                  className="rounded-full bg-brand-blue/10 px-3 py-1 text-xs font-semibold text-brand-blue transition hover:bg-brand-blue/15"
+                  className="min-h-11 rounded-full bg-brand-blue/10 px-3 py-2 text-xs font-semibold text-brand-blue transition hover:bg-brand-blue/15"
                 >
                   Full Team
                 </button>
                 <button
                   type="button"
                   onClick={onClearPlayers}
-                  className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-200"
+                  className="min-h-11 rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-200"
                 >
                   Clear
                 </button>
@@ -81,7 +81,7 @@ export default function FilterBar({
               value={playerSearch}
               onChange={(event) => setPlayerSearch(event.target.value)}
               placeholder="Search players"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+              className="min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
             />
             <div className="max-h-56 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50 p-2">
               <div className="flex flex-wrap gap-2">
@@ -100,7 +100,7 @@ export default function FilterBar({
                               : [...selectedPlayers, player]
                           )
                         }
-                        className={`rounded-full px-3 py-2 text-sm font-medium transition ${
+                        className={`min-h-11 rounded-full px-3 py-2 text-sm font-medium transition ${
                           isSelected
                             ? "bg-brand-blue text-white"
                             : "bg-white text-slate-700 hover:bg-brand-blue/10"
@@ -129,7 +129,7 @@ export default function FilterBar({
                 type="date"
                 value={startDate}
                 onChange={(event) => onStartDateChange(event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
               />
             </label>
             <label className="space-y-2">
@@ -138,7 +138,7 @@ export default function FilterBar({
                 type="date"
                 value={endDate}
                 onChange={(event) => onEndDateChange(event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
               />
             </label>
             <div className="space-y-2">
@@ -147,21 +147,21 @@ export default function FilterBar({
                 <button
                   type="button"
                   onClick={() => onApplyDatePreset("last7")}
-                  className="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
+                  className="min-h-11 rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
                 >
                   Last 7 days
                 </button>
                 <button
                   type="button"
                   onClick={() => onApplyDatePreset("last30")}
-                  className="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
+                  className="min-h-11 rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
                 >
                   Last 30 days
                 </button>
                 <button
                   type="button"
                   onClick={() => onApplyDatePreset("season")}
-                  className="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
+                  className="min-h-11 rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
                 >
                   Current season
                 </button>
@@ -176,7 +176,7 @@ export default function FilterBar({
                 <button
                   type="button"
                   onClick={onClearDays}
-                  className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-200"
+                  className="min-h-11 rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-200"
                 >
                   All days
                 </button>
@@ -191,7 +191,7 @@ export default function FilterBar({
                         key={day}
                         type="button"
                         onClick={() => onDayToggle(day)}
-                        className={`rounded-full px-3 py-2 text-sm font-medium transition ${
+                        className={`min-h-11 rounded-full px-3 py-2 text-sm font-medium transition ${
                           isSelected
                             ? "bg-brand-blue text-white"
                             : "bg-white text-slate-700 hover:bg-brand-blue/10"
@@ -233,7 +233,7 @@ export default function FilterBar({
               <select
                 value={selectedCohort}
                 onChange={(event) => onCohortChange(event.target.value)}
-                className="w-full rounded-2xl border border-white/60 bg-white/80 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+                className="min-h-11 w-full rounded-2xl border border-white/60 bg-white/80 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
               >
                 <option value="all">Full Team</option>
                 <option value="above-average">Above Team Average</option>

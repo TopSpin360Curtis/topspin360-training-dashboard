@@ -13,7 +13,10 @@ import {
   YAxis
 } from "recharts";
 import { useReactToPrint } from "react-to-print";
+import AlertsModal from "@/components/AlertsModal";
+import CoachNotesPanel from "@/components/CoachNotesPanel";
 import CompareView from "@/components/CompareView";
+import DayOfWeekView from "@/components/DayOfWeekView";
 import FilterBar from "@/components/FilterBar";
 import GoalsView from "@/components/GoalsView";
 import Leaderboard from "@/components/Leaderboard";
@@ -29,13 +32,18 @@ import {
   filterByDateRange,
   filterByDayOfWeek,
   filterByPlayers,
+  getDayOfWeekHeatmapData,
+  getDayOfWeekInsights,
+  getDayOfWeekStats,
   formatSignedPercent,
   formatNumber,
   getBandDistribution,
   getBestPerformer,
   getCohortPlayers,
   getDateBounds,
+  getHighPriorityAlerts,
   getMostSessions,
+  getOrderedWeekdays,
   getPeriodRange,
   getPlayerStats,
   getPlayerTrendSeries,
@@ -47,15 +55,18 @@ import {
   getTotalRevolutions,
   getUniquePlayers
 } from "@/lib/dataUtils";
+import { loadCoachNotes, saveCoachNotes } from "@/lib/notesStorage";
 import { sampleTrainingData } from "@/lib/sampleData";
 import type {
   BenchmarkConfig,
+  CoachNote,
   DataSourceMeta,
+  PlayerAlert,
   ReviewPriority,
   TrainingSession
 } from "@/lib/types";
 
-type TabKey = "overview" | "trends" | "compare" | "goals";
+type TabKey = "overview" | "trends" | "compare" | "dayOfWeek" | "goals";
 type SortKey =
   | "rank"
   | "player"
@@ -195,6 +206,16 @@ export default function DashboardShell({
   const [sortKey, setSortKey] = useState<SortKey>("avgRFD");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [isSyncingSheets, setIsSyncingSheets] = useState(false);
+  const [coachNotes, setCoachNotes] = useState<CoachNote[]>([]);
+  const [dayViewMode, setDayViewMode] = useState<"team" | "individual">("team");
+  const [selectedDayPlayer, setSelectedDayPlayer] = useState("");
+  const [alerts, setAlerts] = useState<PlayerAlert[]>([]);
+  const [isAlertsOpen, setIsAlertsOpen] = useState(false);
+  const [noteDraft, setNoteDraft] = useState<{
+    playerName?: string;
+    dayOfWeek?: string;
+    noteDate?: string;
+  } | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   const dateBounds = useMemo(() => getDateBounds(data), [data]);
@@ -247,7 +268,7 @@ export default function DashboardShell({
     rank: index + 1
   }));
   const daysOfWeek = useMemo(
-    () => [...new Set(data.map((session) => session.dayOfWeek))],
+    () => getOrderedWeekdays([...new Set(data.map((session) => session.dayOfWeek))]),
     [data]
   );
   const bestPerformer = getBestPerformer(filteredData);
@@ -287,6 +308,17 @@ export default function DashboardShell({
     "";
   const trendPlayerStats = getPlayerStats(filteredData, trendPlayer);
   const trendSessions = getPlayerTrendSeries(filteredData, trendPlayer, teamScopeData);
+  const dayPlayer = players.includes(selectedDayPlayer) ? selectedDayPlayer : players[0] || "";
+  const dayScopedData =
+    dayViewMode === "individual" && dayPlayer
+      ? filterByPlayers(filteredData, [dayPlayer])
+      : filteredData;
+  const dayOfWeekStats = getDayOfWeekStats(dayScopedData);
+  const dayOfWeekHeatmap = getDayOfWeekHeatmapData(
+    dayViewMode === "individual" ? filterByPlayers(filteredData, [dayPlayer]) : filteredData,
+    daysOfWeek
+  );
+  const dayOfWeekInsights = getDayOfWeekInsights(dayOfWeekStats);
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -317,6 +349,8 @@ export default function DashboardShell({
         window.localStorage.removeItem(DASHBOARD_SOURCE_STORAGE_KEY);
       }
     }
+
+    setCoachNotes(loadCoachNotes());
   }, []);
 
   useEffect(() => {
@@ -337,7 +371,19 @@ export default function DashboardShell({
     if (!comparePlayers.length) {
       setComparePlayers(players.slice(0, 3));
     }
-  }, [comparePlayers.length, data, endDate, players, selectedTrendPlayer, startDate]);
+
+    if (!selectedDayPlayer && players[0]) {
+      setSelectedDayPlayer(players[0]);
+    }
+  }, [
+    comparePlayers.length,
+    data,
+    endDate,
+    players,
+    selectedDayPlayer,
+    selectedTrendPlayer,
+    startDate
+  ]);
 
   useEffect(() => {
     setSelectedPlayers((current) => {
@@ -348,6 +394,9 @@ export default function DashboardShell({
       const next = current.filter((player) => players.includes(player));
       return arraysEqual(current, next) ? current : next;
     });
+    setSelectedDayPlayer((current) =>
+      current && players.includes(current) ? current : players[0] ?? ""
+    );
   }, [players]);
 
   useEffect(() => {
@@ -396,6 +445,14 @@ export default function DashboardShell({
       JSON.stringify(sourceMeta)
     );
   }, [data, sourceMeta]);
+
+  useEffect(() => {
+    saveCoachNotes(coachNotes);
+  }, [coachNotes]);
+
+  useEffect(() => {
+    setAlerts(getHighPriorityAlerts(selectedPlayers.length ? filteredData : cohortData, teamScopeData));
+  }, [cohortData, filteredData, selectedPlayers.length, teamScopeData]);
 
   function handleSortChange(nextKey: SortKey) {
     if (sortKey === nextKey) {
@@ -536,6 +593,36 @@ export default function DashboardShell({
     exportToCSV(filteredData);
   }
 
+  function handleSaveCoachNote(note: Omit<CoachNote, "id" | "createdAt">) {
+    setCoachNotes((current) => [
+      {
+        ...note,
+        id: `${note.playerName}-${note.dayOfWeek}-${Date.now()}`,
+        createdAt: new Date().toISOString()
+      },
+      ...current
+    ]);
+  }
+
+  function handleViewAlertTrends(player: string) {
+    setSelectedTrendPlayer(player);
+    setSelectedPlayers([player]);
+    setViewMode("individual");
+    setActiveTab("trends");
+    setIsAlertsOpen(false);
+  }
+
+  function handleAddAlertNote(player: string) {
+    setSelectedPlayers([player]);
+    setSelectedDayPlayer(player);
+    setDayViewMode("individual");
+    setActiveTab("dayOfWeek");
+    setNoteDraft({
+      playerName: player
+    });
+    setIsAlertsOpen(false);
+  }
+
   const tabs: Array<{
     key: TabKey;
     label: string;
@@ -543,6 +630,7 @@ export default function DashboardShell({
     { key: "overview", label: "Overview" },
     { key: "trends", label: "Trends" },
     { key: "compare", label: "Compare Players" },
+    { key: "dayOfWeek", label: "Day of week" },
     { key: "goals", label: "Goals & Benchmarks" }
   ];
 
@@ -563,7 +651,9 @@ export default function DashboardShell({
         onViewChange={handleViewChange}
         onExport={handleExportCsv}
         onSyncSheets={handleSyncSheets}
+        onShowAlerts={() => setIsAlertsOpen(true)}
         isSyncing={isSyncingSheets}
+        alertCount={alerts.length}
         canLogout={passwordProtectionEnabled}
       />
       <FilterBar
@@ -676,7 +766,7 @@ export default function DashboardShell({
               </div>
             </article>
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
               <StatCard
                 label="Cohort Avg RFD"
                 value={formatNumber(displayedAverage)}
@@ -834,6 +924,22 @@ export default function DashboardShell({
                 startDate && endDate ? `${startDate} to ${endDate}` : "Current window"
               }
             />
+
+            <CoachNotesPanel
+              title="Coach notes"
+              subtitle="Capture context for the selected player without leaving the trend view."
+              players={filteredPlayers}
+              days={daysOfWeek}
+              notes={coachNotes}
+              onSaveNote={handleSaveCoachNote}
+              initialPlayer={trendPlayer || "Full team"}
+              initialDay={trendSessions.at(-1)?.dayOfWeek ?? daysOfWeek[0] ?? "Monday"}
+              initialDate={trendSessions.at(-1)?.date ?? ""}
+              draft={noteDraft}
+              onDraftConsumed={() => setNoteDraft(null)}
+              collapsible
+              defaultExpanded={false}
+            />
           </section>
         ) : null}
 
@@ -845,6 +951,26 @@ export default function DashboardShell({
               onSelectionChange={setComparePlayers}
               data={filteredData}
               teamAverage={teamAverage}
+            />
+          </section>
+        ) : null}
+
+        {activeTab === "dayOfWeek" ? (
+          <section className="mt-6">
+            <DayOfWeekView
+              data={dayOfWeekStats}
+              heatmap={dayOfWeekHeatmap}
+              teamAverage={teamAverage}
+              players={players}
+              insights={dayOfWeekInsights}
+              teamToggle={dayViewMode}
+              onTeamToggle={setDayViewMode}
+              selectedPlayer={dayPlayer}
+              onSelectedPlayerChange={setSelectedDayPlayer}
+              notes={coachNotes}
+              onSaveNote={handleSaveCoachNote}
+              noteDraft={noteDraft}
+              onNoteDraftConsumed={() => setNoteDraft(null)}
             />
           </section>
         ) : null}
@@ -864,6 +990,14 @@ export default function DashboardShell({
           </section>
         ) : null}
       </main>
+
+      <AlertsModal
+        alerts={alerts}
+        open={isAlertsOpen}
+        onClose={() => setIsAlertsOpen(false)}
+        onViewTrends={handleViewAlertTrends}
+        onAddNote={handleAddAlertNote}
+      />
     </div>
   );
 }

@@ -1,9 +1,14 @@
 import type {
+  AutoInsight,
   BenchmarkConfig,
+  CoachNote,
+  DayOfWeekPlayerHeatmapRow,
+  DayOfWeekStat,
   GoalTarget,
   LeaderboardRow,
   PercentileTier,
   PlayerStats,
+  PlayerAlert,
   ReviewPriority,
   RiskBand,
   TrainingSession
@@ -70,6 +75,16 @@ function average(values: number[]) {
 
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
+
+const WEEKDAY_ORDER = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday"
+] as const;
 
 function median(values: number[]) {
   if (!values.length) {
@@ -156,9 +171,8 @@ export function getRiskBandMeta(value: number | RiskBand) {
 
 export function getImbalanceMetrics(ccw: number, cw: number) {
   const imbalanceAbs = Math.abs(ccw - cw);
-  const imbalancePct = Math.max(ccw, cw, 1)
-    ? (imbalanceAbs / Math.max(ccw, cw, 1)) * 100
-    : 0;
+  const midpoint = (ccw + cw) / 2;
+  const imbalancePct = midpoint ? (imbalanceAbs / midpoint) * 100 : 0;
 
   return {
     imbalanceAbs,
@@ -177,6 +191,72 @@ export function getTrendStatus(changePct: number) {
   }
 
   return "plateauing";
+}
+
+function getLastSessionDate(sessions: TrainingSession[]) {
+  const ordered = sortSessionsByDate(sessions);
+  return ordered.at(-1)?.date;
+}
+
+function getBottomPercentileThreshold(values: number[], percentile: number) {
+  if (!values.length) {
+    return 0;
+  }
+
+  const sorted = [...values].sort((left, right) => left - right);
+  const index = Math.min(
+    sorted.length - 1,
+    Math.max(0, Math.floor((sorted.length - 1) * percentile))
+  );
+  return sorted[index];
+}
+
+function getRecentActivityThreshold(data: TrainingSession[]) {
+  if (!data.length) {
+    return "";
+  }
+
+  const latestDate = sortSessionsByDate(data).at(-1)?.date;
+
+  if (!latestDate) {
+    return "";
+  }
+
+  const cutoff = new Date(`${latestDate}T12:00:00`);
+  cutoff.setDate(cutoff.getDate() - 14);
+  return cutoff.toISOString().slice(0, 10);
+}
+
+function getAlertReasons(
+  stat: PlayerStats,
+  teamAverage: number,
+  avgThreshold: number,
+  lastSessionDate?: string,
+  recentThreshold?: string
+) {
+  const reasons: string[] = [];
+
+  if (stat.avgRFD <= avgThreshold) {
+    reasons.push("Bottom 15% of cohort by avg RFD");
+  }
+
+  if (stat.sessions < 3) {
+    reasons.push("Low session count");
+  }
+
+  if (stat.imbalancePct > 8) {
+    reasons.push("CW/CCW imbalance above 8%");
+  }
+
+  if (stat.recentChangePct < 0 && stat.avgRFD < teamAverage) {
+    reasons.push("Declining trend below team average");
+  }
+
+  if (recentThreshold && (!lastSessionDate || lastSessionDate < recentThreshold)) {
+    reasons.push("No sessions in past 14 days");
+  }
+
+  return reasons;
 }
 
 export function isDisplayablePlayerName(value: string) {
@@ -409,47 +489,16 @@ export function getTeamAverageByDate(data: TrainingSession[]) {
   ) as Record<string, number>;
 }
 
-function getReviewPriority(
-  riskBand: RiskBand,
-  trendStatus: PlayerStats["trendStatus"],
-  sessions: number,
-  imbalancePct: number
-): ReviewPriority {
-  if (riskBand === "high" || trendStatus === "declining" || imbalancePct > 10) {
+function getReviewPriority(reasons: string[], riskBand: RiskBand): ReviewPriority {
+  if (reasons.length || riskBand === "high") {
     return "high";
   }
 
-  if (riskBand === "moderate" || sessions <= 2 || imbalancePct > 5) {
+  if (riskBand === "moderate") {
     return "monitor";
   }
 
   return "on-track";
-}
-
-function getReviewReasons(stat: PlayerStats) {
-  const reasons: string[] = [];
-
-  if (stat.riskBand === "high") {
-    reasons.push("High-risk RFD band");
-  } else if (stat.riskBand === "moderate") {
-    reasons.push("Moderate-risk RFD band");
-  }
-
-  if (stat.trendStatus === "declining") {
-    reasons.push("Recent trend is declining");
-  }
-
-  if (stat.sessions <= 2) {
-    reasons.push("Low session count");
-  }
-
-  if (stat.imbalancePct > 10) {
-    reasons.push("Meaningful CW/CCW imbalance");
-  } else if (stat.imbalancePct > 5) {
-    reasons.push("Mild CW/CCW imbalance");
-  }
-
-  return reasons.length ? reasons : ["Stable or improving"];
 }
 
 export function getTeamLeaderboard(
@@ -460,25 +509,39 @@ export function getTeamLeaderboard(
   const stats = players.map((player) => getPlayerStats(data, player));
   const averages = stats.map((player) => player.avgRFD);
   const teamAverage = getTeamAverageRFD(teamScopeData);
+  const avgThreshold = getBottomPercentileThreshold(
+    players.map((player) => getPlayerStats(teamScopeData, player).avgRFD),
+    0.15
+  );
+  const recentThreshold = getRecentActivityThreshold(teamScopeData);
 
   return stats
-    .map((stat) => ({
-      ...stat,
-      tier: getPercentileTier(stat.avgRFD, averages),
-      trendDelta: getTrendDeltaForSessions(
-        data.filter((session) => session.player === stat.player)
-      ),
-      teamDelta: stat.avgRFD - teamAverage,
-      teamDeltaPct: teamAverage ? ((stat.avgRFD - teamAverage) / teamAverage) * 100 : 0,
-      reviewPriority: getReviewPriority(
-        stat.riskBand,
-        stat.trendStatus,
-        stat.sessions,
-        stat.imbalancePct
-      ),
-      reviewReasons: getReviewReasons(stat),
-      rank: 0
-    }))
+    .map((stat) => {
+      const sessions = data.filter((session) => session.player === stat.player);
+      const reviewReasons = getAlertReasons(
+        stat,
+        teamAverage,
+        avgThreshold,
+        getLastSessionDate(sessions),
+        recentThreshold
+      );
+
+      return {
+        ...stat,
+        tier: getPercentileTier(stat.avgRFD, averages),
+        trendDelta: getTrendDeltaForSessions(sessions),
+        teamDelta: stat.avgRFD - teamAverage,
+        teamDeltaPct: teamAverage ? ((stat.avgRFD - teamAverage) / teamAverage) * 100 : 0,
+        reviewPriority: getReviewPriority(reviewReasons, stat.riskBand),
+        reviewReasons: reviewReasons.length
+          ? reviewReasons
+          : stat.riskBand === "moderate"
+            ? ["Moderate-risk RFD band"]
+            : ["Stable or improving"],
+        lastSessionDate: getLastSessionDate(sessions),
+        rank: 0
+      };
+    })
     .sort((left, right) => right.avgRFD - left.avgRFD)
     .map((row, index) => ({
       ...row,
@@ -552,6 +615,25 @@ export function getReviewQueue(
       return left.avgRFD - right.avgRFD;
     })
     .slice(0, 5);
+}
+
+export function getHighPriorityAlerts(
+  data: TrainingSession[],
+  teamScopeData: TrainingSession[] = data
+): PlayerAlert[] {
+  return getTeamLeaderboard(data, teamScopeData)
+    .filter((row) => row.reviewPriority === "high")
+    .map((row) => ({
+      player: row.player,
+      priority: row.reviewPriority,
+      reasons: row.reviewReasons,
+      avgRFD: row.avgRFD,
+      sessions: row.sessions,
+      imbalancePct: row.imbalancePct,
+      trendDelta: row.trendDelta,
+      lastSessionDate: row.lastSessionDate
+    }))
+    .sort((left, right) => left.avgRFD - right.avgRFD);
 }
 
 export function getSessionHistory(data: TrainingSession[], playerName: string) {
@@ -733,6 +815,137 @@ export function getCohortPlayers(
   }
 
   return leaderboard.map((row) => row.player);
+}
+
+export function getOrderedWeekdays(days?: string[]) {
+  const source = days?.length ? days : Array.from(WEEKDAY_ORDER);
+  return source
+    .filter((day): day is (typeof WEEKDAY_ORDER)[number] =>
+      WEEKDAY_ORDER.includes(day as (typeof WEEKDAY_ORDER)[number])
+    )
+    .sort((left, right) => WEEKDAY_ORDER.indexOf(left) - WEEKDAY_ORDER.indexOf(right));
+}
+
+export function getDayOfWeekStats(
+  data: TrainingSession[],
+  playerFilter?: string
+): DayOfWeekStat[] {
+  const scoped = playerFilter ? data.filter((session) => session.player === playerFilter) : data;
+  const grouped = new Map<string, TrainingSession[]>();
+
+  scoped.forEach((session) => {
+    const sessions = grouped.get(session.dayOfWeek) ?? [];
+    sessions.push(session);
+    grouped.set(session.dayOfWeek, sessions);
+  });
+
+  return getOrderedWeekdays(Array.from(grouped.keys())).map((day) => {
+    const sessions = grouped.get(day) ?? [];
+    const avgCCW = average(sessions.map((session) => session.maxRfdCCW));
+    const avgCW = average(sessions.map((session) => session.maxRfdCW));
+    const midpoint = (avgCCW + avgCW) / 2;
+
+    return {
+      day,
+      sessionCount: sessions.length,
+      avgRFD: average(sessions.map((session) => session.bestRfd)),
+      avgCCW,
+      avgCW,
+      balancePct: midpoint ? (Math.abs(avgCCW - avgCW) / midpoint) * 100 : 0
+    };
+  });
+}
+
+export function getDayOfWeekHeatmapData(
+  data: TrainingSession[],
+  days: string[],
+  limit = 8
+): DayOfWeekPlayerHeatmapRow[] {
+  const players = getUniquePlayers(data)
+    .map((player) => ({
+      player,
+      sessions: data.filter((session) => session.player === player).length
+    }))
+    .sort((left, right) => right.sessions - left.sessions)
+    .slice(0, limit);
+
+  return players.map((player) => ({
+    player: player.player,
+    sessions: player.sessions,
+    values: Object.fromEntries(
+      days.map((day) => {
+        const sessions = data.filter(
+          (session) => session.player === player.player && session.dayOfWeek === day
+        );
+        return [day, sessions.length ? average(sessions.map((session) => session.bestRfd)) : null];
+      })
+    )
+  }));
+}
+
+export function getDayOfWeekInsights(stats: DayOfWeekStat[]): AutoInsight[] {
+  if (!stats.length) {
+    return [];
+  }
+
+  const validStats = stats.filter((day) => day.sessionCount > 0);
+
+  if (!validStats.length) {
+    return [];
+  }
+
+  const weeklyMean = average(validStats.map((day) => day.avgRFD));
+  const bestDay = [...validStats].sort((left, right) => right.avgRFD - left.avgRFD)[0];
+  const worstDay = [...validStats].sort((left, right) => left.avgRFD - right.avgRFD)[0];
+  const highestImbalance = [...validStats].sort(
+    (left, right) => right.balancePct - left.balancePct
+  )[0];
+  const sessionCounts = validStats.map((day) => day.sessionCount);
+  const performances = validStats.map((day) => day.avgRFD);
+  const correlationDenominator = Math.sqrt(
+    sessionCounts.reduce((sum, count) => sum + count ** 2, 0) *
+      performances.reduce((sum, value) => sum + value ** 2, 0)
+  );
+  const correlation = correlationDenominator
+    ? sessionCounts.reduce(
+        (sum, count, index) => sum + count * performances[index],
+        0
+      ) / correlationDenominator
+    : 0;
+
+  return [
+    {
+      title: "Best weekly window",
+      body: `${bestDay.day} leads the week at ${formatNumber(bestDay.avgRFD)}, ${formatSignedPercent(
+        weeklyMean ? ((bestDay.avgRFD - weeklyMean) / weeklyMean) * 100 : 0
+      )} vs the weekly mean.`,
+      tone: "positive"
+    },
+    {
+      title: "Lowest-performing day",
+      body: `${worstDay.day} sits lowest at ${formatNumber(worstDay.avgRFD)}, ${formatSignedPercent(
+        weeklyMean ? ((worstDay.avgRFD - weeklyMean) / weeklyMean) * 100 : 0
+      )} vs the weekly mean.`,
+      tone: "warning"
+    },
+    {
+      title: "Directional spike",
+      body: `${highestImbalance.day} shows the largest CW/CCW split at ${formatNumber(
+        highestImbalance.balancePct
+      )}% balance difference, worth a fatigue check.`,
+      tone: "warning"
+    },
+    {
+      title: "Volume vs output",
+      body:
+        correlation >= 0.9
+          ? "Higher-volume days are also carrying stronger average RFD this period."
+          : correlation <= 0.75
+            ? "Session volume is not tightly tracking performance, so day quality likely matters more than quantity."
+            : "Volume and performance are moving together moderately across the week.",
+      tone: "info"
+    }
+  ];
 }
 
 export function getDefaultGoalTarget(player: string, data: TrainingSession[]): GoalTarget {
