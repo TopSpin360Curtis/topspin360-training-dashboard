@@ -145,37 +145,73 @@ function ReviewPanel({
   }>;
 }) {
   const toneMap: Record<ReviewPriority, string> = {
-    high: "bg-rose-50 text-rose-700",
-    monitor: "bg-amber-50 text-amber-700",
-    "on-track": "bg-emerald-50 text-emerald-700"
+    high: "border-rose-300 bg-rose-50/90 text-rose-700",
+    monitor: "border-amber-300 bg-amber-50/90 text-amber-700",
+    "on-track": "border-emerald-300 bg-emerald-50/90 text-emerald-700"
   };
   const labelMap: Record<ReviewPriority, string> = {
     high: "High Priority",
     monitor: "Monitor",
     "on-track": "On Track"
   };
+  const [showAll, setShowAll] = useState(false);
+  const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
+  const visibleRows = showAll ? rows : rows.slice(0, 4);
 
   return (
     <article className="rounded-3xl border border-white/60 bg-white/95 p-5 shadow-soft">
-      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
-        Coach Review
-      </p>
-      <h3 className="mt-2 text-lg font-semibold text-brand-ink">Transparent review queue</h3>
-      <div className="mt-4 space-y-3">
-        {rows.map((row) => (
-          <div
-            key={row.player}
-            className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3"
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
+            Coach Review · {rows.length} players flagged
+          </p>
+          <h3 className="mt-2 text-lg font-semibold text-brand-ink">Transparent review queue</h3>
+        </div>
+        {rows.length > 4 ? (
+          <button
+            type="button"
+            onClick={() => setShowAll((current) => !current)}
+            className="min-h-11 rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
           >
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-brand-ink">{row.player}</p>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${toneMap[row.reviewPriority]}`}>
-                {labelMap[row.reviewPriority]}
-              </span>
-            </div>
-            <p className="mt-2 text-xs text-slate-500">{row.reviewReasons.join(" • ")}</p>
+            {showAll ? "Show fewer" : `View all ${rows.length} →`}
+          </button>
+        ) : null}
+      </div>
+
+      <div className="mt-4 flex gap-4 overflow-x-auto pb-1">
+        {visibleRows.map((row) => {
+          const isExpanded = expandedPlayer === row.player;
+
+          return (
+            <button
+              key={row.player}
+              type="button"
+              onClick={() =>
+                setExpandedPlayer((current) => (current === row.player ? null : row.player))
+              }
+              className={`min-h-[138px] min-w-[220px] flex-1 rounded-2xl border-l-4 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${toneMap[row.reviewPriority]}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm font-semibold text-brand-ink">{row.player}</p>
+                <span className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
+                  {labelMap[row.reviewPriority]}
+                </span>
+              </div>
+              <p
+                className={`mt-3 text-sm leading-6 text-slate-600 ${
+                  isExpanded ? "" : "line-clamp-2"
+                }`}
+              >
+                {row.reviewReasons.join(" · ")}
+              </p>
+            </button>
+          );
+        })}
+        {!rows.length ? (
+          <div className="w-full rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-500">
+            No players are currently flagged in the active cohort.
           </div>
-        ))}
+        ) : null}
       </div>
     </article>
   );
@@ -246,6 +282,10 @@ export default function DashboardShell({
   );
   const filteredPlayers = useMemo(() => getUniquePlayers(filteredData), [filteredData]);
   const leaderboard = getTeamLeaderboard(filteredData, teamScopeData);
+  const flaggedPlayers = getTeamLeaderboard(
+    selectedPlayers.length ? filteredData : cohortData,
+    teamScopeData
+  ).filter((row) => row.reviewPriority !== "on-track");
   const reviewQueue = getReviewQueue(
     selectedPlayers.length ? filteredData : cohortData,
     teamScopeData
@@ -593,6 +633,13 @@ export default function DashboardShell({
     exportToCSV(filteredData);
   }
 
+  function scrollToReviewQueue() {
+    document.getElementById("coach-review-queue")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
+
   function handleSaveCoachNote(note: Omit<CoachNote, "id" | "createdAt">) {
     setCoachNotes((current) => [
       {
@@ -758,12 +805,16 @@ export default function DashboardShell({
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
                     Review Queue
                   </p>
-                  <p className="mt-2 text-lg font-semibold text-brand-ink">
-                    {reviewQueue.filter((row) => row.reviewPriority !== "on-track").length}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    players flagged for monitor or high priority
-                  </p>
+                  <button
+                    type="button"
+                    onClick={scrollToReviewQueue}
+                    className="mt-2 text-left"
+                  >
+                    <p className="text-lg font-semibold text-brand-ink">{flaggedPlayers.length}</p>
+                    <p className="mt-1 text-sm text-slate-500 underline decoration-slate-300 underline-offset-4">
+                      players flagged for monitor or high priority
+                    </p>
+                  </button>
                 </div>
               </div>
             </article>
@@ -826,6 +877,10 @@ export default function DashboardShell({
               />
             </div>
 
+            <section id="coach-review-queue">
+              <ReviewPanel rows={flaggedPlayers} />
+            </section>
+
             <div className="grid gap-6 xl:grid-cols-[2fr_0.9fr]">
               <Leaderboard
                 rows={rankedLeaderboard}
@@ -835,7 +890,6 @@ export default function DashboardShell({
               />
 
               <div className="space-y-6">
-                <ReviewPanel rows={reviewQueue} />
                 <SectionPanel title="Top Performers" items={topPerformers} />
                 <SectionPanel title="Most Sessions" items={mostSessions} />
               </div>
