@@ -8,6 +8,8 @@ export type TrainingSession = {
   bestRfd: number;
 };
 
+export type DashboardProfile = "team" | "test";
+
 export type RiskBand = "high" | "moderate" | "lower" | "lowest";
 
 export type TrendStatus = "improving" | "plateauing" | "declining";
@@ -98,5 +100,6 @@ export type BenchmarkConfig = {
 
 export type DataSourceMeta = {
   source: "sheets" | "csv" | "sample";
+  profile?: DashboardProfile;
   message?: string;
 };
