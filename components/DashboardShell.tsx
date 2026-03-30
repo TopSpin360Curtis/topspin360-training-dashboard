@@ -235,6 +235,7 @@ export default function DashboardShell({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedTrendPlayer, setSelectedTrendPlayer] = useState("");
+  const [trendPlayerSearch, setTrendPlayerSearch] = useState("");
   const [comparePlayers, setComparePlayers] = useState<string[]>([]);
   const [benchmarkConfig, setBenchmarkConfig] = useState<BenchmarkConfig>(
     buildDefaultBenchmarkConfig(sampleTrainingData)
@@ -281,6 +282,15 @@ export default function DashboardShell({
     [cohortData, selectedPlayers]
   );
   const filteredPlayers = useMemo(() => getUniquePlayers(filteredData), [filteredData]);
+  const trendSelectablePlayers = useMemo(() => {
+    const query = trendPlayerSearch.trim().toLowerCase();
+
+    if (!query) {
+      return filteredPlayers;
+    }
+
+    return filteredPlayers.filter((player) => player.toLowerCase().includes(query));
+  }, [filteredPlayers, trendPlayerSearch]);
   const leaderboard = getTeamLeaderboard(filteredData, teamScopeData);
   const flaggedPlayers = getTeamLeaderboard(
     selectedPlayers.length ? filteredData : cohortData,
@@ -955,20 +965,36 @@ export default function DashboardShell({
         {activeTab === "trends" ? (
           <section className="mt-6 space-y-6">
             <article className="no-print rounded-3xl border border-white/60 bg-white/95 p-5 shadow-soft">
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">Player</span>
-                <select
-                  value={trendPlayer}
-                  onChange={(event) => setSelectedTrendPlayer(event.target.value)}
-                  className="w-full max-w-sm rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
-                >
-                  {filteredPlayers.map((player) => (
-                    <option key={player} value={player}>
-                      {player}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="grid gap-4 md:grid-cols-[minmax(0,280px)_minmax(0,360px)] md:items-end">
+                <label className="space-y-2">
+                  <span className="text-sm font-medium text-slate-700">Search players</span>
+                  <input
+                    type="search"
+                    value={trendPlayerSearch}
+                    onChange={(event) => setTrendPlayerSearch(event.target.value)}
+                    placeholder="Filter players…"
+                    className="min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-medium text-slate-700">Player</span>
+                  <select
+                    value={
+                      trendSelectablePlayers.includes(trendPlayer)
+                        ? trendPlayer
+                        : trendSelectablePlayers[0] || trendPlayer
+                    }
+                    onChange={(event) => setSelectedTrendPlayer(event.target.value)}
+                    className="min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+                  >
+                    {trendSelectablePlayers.map((player) => (
+                      <option key={player} value={player}>
+                        {player}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
             </article>
 
             <TrendCharts
