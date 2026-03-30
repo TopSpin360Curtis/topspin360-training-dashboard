@@ -31,15 +31,6 @@ export default function InjurySummaryCard({ detail }: InjurySummaryCardProps) {
             subtext: detail.injury.weekLabel
           },
           {
-            label: "Status",
-            value: detail.statusLabel
-          },
-          {
-            label: "Weeks affected",
-            value:
-              detail.weeksAffected !== null ? `${detail.weeksAffected} weeks` : "Not available"
-          },
-          {
             label: "Training record",
             value: detail.hasTrainingData ? `${detail.totalSessions} sessions` : "No data"
           }

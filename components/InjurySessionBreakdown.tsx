@@ -5,7 +5,6 @@ import { formatDate, formatNumber } from "@/lib/dataUtils";
 import type {
   InjuryDetailSession,
   InjuryLookbackWindow,
-  InjuryMonthlySessionCount,
   TrainingSession
 } from "@/lib/types";
 
@@ -13,8 +12,8 @@ type InjurySessionBreakdownProps = {
   title: string;
   subtitle: string;
   totalSessions: number;
+  totalSessionsLabel?: string;
   averageRfd?: number | null;
-  monthlyCounts?: InjuryMonthlySessionCount[];
   lookbacks?: InjuryLookbackWindow[];
   latestSession?: TrainingSession | null;
   daysBetween?: number | null;
@@ -27,8 +26,8 @@ export default function InjurySessionBreakdown({
   title,
   subtitle,
   totalSessions,
+  totalSessionsLabel = "Total sessions",
   averageRfd,
-  monthlyCounts = [],
   lookbacks = [],
   latestSession,
   daysBetween,
@@ -51,10 +50,10 @@ export default function InjurySessionBreakdown({
         </div>
       ) : (
         <div className="mt-4 space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl bg-slate-50/80 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Total sessions
+                {totalSessionsLabel}
               </p>
               <p className="mt-2 text-2xl font-semibold text-brand-ink">{totalSessions}</p>
             </div>
@@ -64,16 +63,6 @@ export default function InjurySessionBreakdown({
               </p>
               <p className="mt-2 text-2xl font-semibold text-brand-ink">
                 {averageRfd !== null && averageRfd !== undefined ? formatNumber(averageRfd) : "—"}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-slate-50/80 p-4 sm:col-span-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Monthly distribution
-              </p>
-              <p className="mt-2 text-sm text-slate-600">
-                {monthlyCounts.length
-                  ? monthlyCounts.map((item) => `${item.count} in ${item.monthLabel}`).join(", ")
-                  : "No monthly distribution available"}
               </p>
             </div>
           </div>

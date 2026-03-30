@@ -71,6 +71,7 @@ export type InjuryDetailData = {
   monthlyPreInjuryCounts: InjuryMonthlySessionCount[];
   preInjuryLookbacks: InjuryLookbackWindow[];
   averagePreInjuryRfd: number | null;
+  averagePostInjuryRfd: number | null;
   daysBetweenLastSessionAndInjury: number | null;
   weeksAffected: number | null;
   statusLabel: string;

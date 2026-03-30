@@ -774,6 +774,9 @@ export function getInjuryDetailData(
   const averagePreInjuryRfd = preInjurySessions.length
     ? average(preInjurySessions.map((session) => session.bestRfd))
     : null;
+  const averagePostInjuryRfd = postInjurySessions.length
+    ? average(postInjurySessions.map((session) => session.bestRfd))
+    : null;
   const daysBetweenLastSessionAndInjury = latestPreInjurySession
     ? getDaysBetween(latestPreInjurySession.date, injury.date)
     : null;
@@ -838,6 +841,7 @@ export function getInjuryDetailData(
     monthlyPreInjuryCounts,
     preInjuryLookbacks,
     averagePreInjuryRfd,
+    averagePostInjuryRfd,
     daysBetweenLastSessionAndInjury,
     weeksAffected,
     statusLabel,

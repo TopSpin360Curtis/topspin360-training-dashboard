@@ -15,6 +15,9 @@ export default function InjuryDetailPanel({
   detail,
   onReturnToList
 }: InjuryDetailPanelProps) {
+  const sessionsSixtyDaysBeforeInjury =
+    detail.preInjuryLookbacks.find((window) => window.days === 60)?.sessionCount ?? 0;
+
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -41,9 +44,9 @@ export default function InjuryDetailPanel({
         <InjurySessionBreakdown
           title="Pre-injury training"
           subtitle="Training summary before the injury date"
-          totalSessions={detail.preInjurySessions.length}
+          totalSessions={sessionsSixtyDaysBeforeInjury}
+          totalSessionsLabel="Sessions 60 before injury"
           averageRfd={detail.averagePreInjuryRfd}
-          monthlyCounts={detail.monthlyPreInjuryCounts}
           lookbacks={detail.preInjuryLookbacks}
           latestSession={detail.latestPreInjurySession}
           daysBetween={detail.daysBetweenLastSessionAndInjury}
@@ -55,6 +58,7 @@ export default function InjuryDetailPanel({
           title="Post-injury follow-up"
           subtitle="Training sessions after the injury date"
           totalSessions={detail.postInjurySessions.length}
+          averageRfd={detail.averagePostInjuryRfd}
           postSessions={detail.firstPostInjurySessions}
           emptyTitle="No post-injury sessions"
           emptyBody="No follow-up sessions have been recorded after the injury date yet."
