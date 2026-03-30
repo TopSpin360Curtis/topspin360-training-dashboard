@@ -2,6 +2,11 @@ import type {
   AutoInsight,
   BenchmarkConfig,
   CoachNote,
+  InjuryDetailData,
+  InjuryDetailSession,
+  InjuryMonthlySessionCount,
+  InjuryRegisterRow,
+  InjuryTrendPoint,
   DayOfWeekPlayerHeatmapRow,
   DayOfWeekStat,
   GoalTarget,
@@ -9,6 +14,8 @@ import type {
   PercentileTier,
   PlayerStats,
   PlayerAlert,
+  PlayerInjury,
+  PlayerInjuryMap,
   ReviewPriority,
   RiskBand,
   TrainingSession
@@ -121,6 +128,12 @@ function parseIsoDate(value: string) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function getDaysBetween(from: string, to: string) {
+  const start = new Date(`${from}T12:00:00`);
+  const end = new Date(`${to}T12:00:00`);
+  return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 export function formatNumber(value: number) {
@@ -675,6 +688,141 @@ export function getPlayerTrendSeries(
     rollingBest: rollingBest[index],
     teamAverage: teamAverageByDate[session.date] ?? null
   }));
+}
+
+export function getInjuryRegisterRows(
+  players: string[],
+  data: TrainingSession[],
+  injuries: PlayerInjuryMap
+): InjuryRegisterRow[] {
+  const injuryPlayers = Array.from(new Set([...players, ...Object.keys(injuries)])).sort((left, right) =>
+    left.localeCompare(right)
+  );
+
+  return injuryPlayers
+    .flatMap((player) => {
+      const entries = injuries[player] ?? [];
+      const stats = getPlayerStats(data, player);
+      const hasTrainingData = stats.sessions > 0;
+
+      return entries.map((injury, index) => ({
+        id: `${player}-${injury.date}-${injury.type}-${index}`,
+        player,
+        injury,
+        stats,
+        hasTrainingData,
+        sessionsLabel: hasTrainingData ? `${stats.sessions}` : "0 training sessions recorded"
+      }));
+    })
+    .sort((left, right) => right.injury.date.localeCompare(left.injury.date));
+}
+
+export function getInjuryDetailData(
+  data: TrainingSession[],
+  player: string,
+  injury: PlayerInjury
+): InjuryDetailData {
+  const sessions = sortSessionsByDate(
+    data.filter((session) => session.player === player)
+  );
+  const preInjurySessions = sessions.filter((session) => session.date < injury.date);
+  const postInjurySessions = sessions
+    .filter((session) => session.date >= injury.date)
+    .map((session) => ({
+      ...session,
+      daysFromInjury: getDaysBetween(injury.date, session.date)
+    }));
+  const latestPreInjurySession = preInjurySessions.at(-1) ?? null;
+  const firstPostInjurySessions = postInjurySessions.slice(0, 3);
+
+  const monthlyMap = new Map<string, number>();
+  preInjurySessions.forEach((session) => {
+    const date = new Date(`${session.date}T12:00:00`);
+    const monthLabel = date.toLocaleDateString("en-CA", {
+      month: "long",
+      year: "numeric"
+    });
+    monthlyMap.set(monthLabel, (monthlyMap.get(monthLabel) ?? 0) + 1);
+  });
+  const monthlyPreInjuryCounts: InjuryMonthlySessionCount[] = Array.from(monthlyMap.entries()).map(
+    ([monthLabel, count]) => ({
+      monthLabel,
+      count
+    })
+  );
+
+  const averagePreInjuryRfd = preInjurySessions.length
+    ? average(preInjurySessions.map((session) => session.bestRfd))
+    : null;
+  const daysBetweenLastSessionAndInjury = latestPreInjurySession
+    ? getDaysBetween(latestPreInjurySession.date, injury.date)
+    : null;
+  const weeksAffected =
+    injury.weeksAffected ??
+    (postInjurySessions.length
+      ? Number((postInjurySessions[postInjurySessions.length - 1].daysFromInjury / 7).toFixed(1))
+      : null);
+  const trendSeries: InjuryTrendPoint[] = sessions.map((session) => ({
+    date: session.date,
+    maxRfdCCW: session.maxRfdCCW,
+    maxRfdCW: session.maxRfdCW,
+    bestRfd: session.bestRfd
+  }));
+
+  const observations = [...(injury.notes ?? [])];
+
+  if (!sessions.length) {
+    observations.push("No training sessions saved under this player name.");
+  } else {
+    if (!postInjurySessions.length) {
+      observations.push("No post-injury training sessions recorded yet.");
+    }
+
+    if (latestPreInjurySession && firstPostInjurySessions.length) {
+      const preBaseline = average(preInjurySessions.map((session) => session.bestRfd));
+      const firstPostAverage = average(firstPostInjurySessions.map((session) => session.bestRfd));
+      const delta = firstPostAverage - preBaseline;
+
+      if (Math.abs(delta) < 1) {
+        observations.push("Interesting that RFD was not meaningfully affected around the injury window.");
+      } else if (delta > 0) {
+        observations.push(`Early post-injury RFD is ${formatSignedPercent((delta / Math.max(preBaseline, 1)) * 100)} versus the pre-injury baseline.`);
+      } else {
+        observations.push(`Early post-injury RFD is ${formatSignedPercent((delta / Math.max(preBaseline, 1)) * 100)} versus the pre-injury baseline.`);
+      }
+    }
+
+    if (sessions.length === 1) {
+      observations.push("Only one training session is recorded for this player.");
+    }
+  }
+
+  const statusLabel = injury.status
+    ? injury.status
+    : !sessions.length
+      ? "No data"
+      : postInjurySessions.length
+        ? "Follow-up recorded"
+        : "Awaiting follow-up";
+
+  return {
+    id: `${player}-${injury.date}-${injury.type}`,
+    player,
+    injury,
+    hasTrainingData: sessions.length > 0,
+    totalSessions: sessions.length,
+    preInjurySessions,
+    postInjurySessions,
+    latestPreInjurySession,
+    firstPostInjurySessions,
+    monthlyPreInjuryCounts,
+    averagePreInjuryRfd,
+    daysBetweenLastSessionAndInjury,
+    weeksAffected,
+    statusLabel,
+    observations,
+    trendSeries
+  };
 }
 
 export function getRecentBestMetrics(data: TrainingSession[], playerName: string) {

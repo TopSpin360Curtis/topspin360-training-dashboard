@@ -1,8 +1,15 @@
 "use client";
 
-import { formatDate, formatNumber, getPlayerStats } from "@/lib/dataUtils";
+import { useEffect, useMemo, useRef, useState } from "react";
+import InjuryDetailPanel from "@/components/InjuryDetailPanel";
 import RiskBandBadge from "@/components/RiskBandBadge";
 import TeamAverageComparator from "@/components/TeamAverageComparator";
+import {
+  formatDate,
+  formatNumber,
+  getInjuryDetailData,
+  getInjuryRegisterRows
+} from "@/lib/dataUtils";
 import type { PlayerInjuryMap, TrainingSession } from "@/lib/types";
 
 type InjuryViewProps = {
@@ -22,25 +29,49 @@ export default function InjuryView({
   injuries,
   teamAverage
 }: InjuryViewProps) {
-  const injuryRows = players
-    .map((player) => {
-      const playerInjuries = injuries[player] ?? [];
-      const stats = getPlayerStats(data, player);
+  const [selectedInjuryId, setSelectedInjuryId] = useState<string | null>(null);
+  const tableRef = useRef<HTMLDivElement | null>(null);
+  const detailRef = useRef<HTMLDivElement | null>(null);
 
-      return playerInjuries.map((injury, index) => ({
-        player,
-        injury,
-        stats,
-        id: `${player}-${injury.date}-${injury.type}-${index}`
-      }));
-    })
-    .flat()
-    .sort((left, right) => right.injury.date.localeCompare(left.injury.date));
-
+  const injuryRows = useMemo(
+    () => getInjuryRegisterRows(players, data, injuries),
+    [data, injuries, players]
+  );
+  const latestInjury = injuryRows[0];
   const uniquePlayersImpacted = new Set(injuryRows.map((row) => row.player)).size;
   const headCount = injuryRows.filter((row) => row.injury.type === "head").length;
   const neckCount = injuryRows.filter((row) => row.injury.type === "neck").length;
-  const latestInjury = injuryRows[0];
+  const selectedRow =
+    injuryRows.find((row) => row.id === selectedInjuryId) ?? null;
+  const selectedDetail = useMemo(
+    () =>
+      selectedRow
+        ? getInjuryDetailData(data, selectedRow.player, selectedRow.injury)
+        : null,
+    [data, selectedRow]
+  );
+
+  useEffect(() => {
+    if (!injuryRows.length) {
+      setSelectedInjuryId(null);
+      return;
+    }
+
+    setSelectedInjuryId((current) =>
+      current && injuryRows.some((row) => row.id === current) ? current : null
+    );
+  }, [injuryRows]);
+
+  useEffect(() => {
+    if (!selectedDetail || !detailRef.current) {
+      return;
+    }
+
+    detailRef.current.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }, [selectedDetail]);
 
   return (
     <div className="space-y-6">
@@ -55,8 +86,8 @@ export default function InjuryView({
             </h3>
           </div>
           <p className="max-w-2xl text-sm text-slate-500">
-            Right-click a player name anywhere in the dashboard to log a head or neck injury and
-            jump back here for follow-up.
+            Click any injury row for a deeper pre and post-injury drill-down. Players with no
+            recorded training data still stay visible here.
           </p>
         </div>
       </article>
@@ -99,7 +130,10 @@ export default function InjuryView({
         ))}
       </div>
 
-      <article className="overflow-x-auto rounded-3xl border border-white/60 bg-white/95 shadow-soft">
+      <div
+        ref={tableRef}
+        className="overflow-x-auto rounded-3xl border border-white/60 bg-white/95 shadow-soft"
+      >
         <div className="border-b border-slate-100 px-5 py-4">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
             Current injuries
@@ -120,43 +154,70 @@ export default function InjuryView({
               </tr>
             </thead>
             <tbody>
-              {injuryRows.map((row) => (
-                <tr key={row.id} className="border-t border-slate-100">
-                  <td className="px-4 py-4 font-semibold text-brand-ink">{row.player}</td>
-                  <td className="px-4 py-4">
-                    <div className="space-y-2">
-                      <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
-                        {formatInjuryType(row.injury.type)}
-                      </span>
-                      {row.injury.label ? (
-                        <p className="text-xs text-slate-500">{row.injury.label}</p>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 text-slate-700">
-                    <div className="space-y-1">
-                      <p>{formatDate(row.injury.date)}</p>
-                      {row.injury.weekLabel ? (
-                        <p className="text-xs text-slate-500">{row.injury.weekLabel}</p>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 text-slate-700">{formatNumber(row.stats.avgRFD)}</td>
-                  <td className="px-4 py-4 text-slate-700">{row.stats.sessions}</td>
-                  <td className="px-4 py-4">
-                    <RiskBandBadge band={row.stats.riskBand} compact />
-                  </td>
-                  <td className="px-4 py-4">
-                    <TeamAverageComparator
-                      delta={row.stats.avgRFD - teamAverage}
-                      deltaPct={
-                        teamAverage ? ((row.stats.avgRFD - teamAverage) / teamAverage) * 100 : 0
-                      }
-                      compact
-                    />
-                  </td>
-                </tr>
-              ))}
+              {injuryRows.map((row) => {
+                const isSelected = row.id === selectedInjuryId;
+
+                return (
+                  <tr
+                    key={row.id}
+                    onClick={() => setSelectedInjuryId(row.id)}
+                    className={`cursor-pointer border-t border-slate-100 transition hover:bg-slate-50/80 ${
+                      isSelected ? "bg-brand-blue/5 ring-1 ring-inset ring-brand-blue/20" : ""
+                    }`}
+                  >
+                    <td className="px-4 py-4 font-semibold text-brand-ink">{row.player}</td>
+                    <td className="px-4 py-4">
+                      <div className="space-y-2">
+                        <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
+                          {formatInjuryType(row.injury.type)}
+                        </span>
+                        {row.injury.label ? (
+                          <p className="text-xs text-slate-500">{row.injury.label}</p>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-slate-700">
+                      <div className="space-y-1">
+                        <p>{formatDate(row.injury.date)}</p>
+                        {row.injury.weekLabel ? (
+                          <p className="text-xs text-slate-500">{row.injury.weekLabel}</p>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-slate-700">
+                      {row.hasTrainingData ? formatNumber(row.stats.avgRFD) : "—"}
+                    </td>
+                    <td className="px-4 py-4 text-slate-700">
+                      <div className="space-y-1">
+                        <p>{row.stats.sessions}</p>
+                        {!row.hasTrainingData ? (
+                          <p className="text-xs text-slate-500">0 training sessions recorded</p>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      {row.hasTrainingData ? (
+                        <RiskBandBadge band={row.stats.riskBand} compact />
+                      ) : (
+                        <span className="text-sm text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      {row.hasTrainingData ? (
+                        <TeamAverageComparator
+                          delta={row.stats.avgRFD - teamAverage}
+                          deltaPct={
+                            teamAverage ? ((row.stats.avgRFD - teamAverage) / teamAverage) * 100 : 0
+                          }
+                          compact
+                        />
+                      ) : (
+                        <span className="text-sm text-slate-400">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         ) : (
@@ -165,7 +226,21 @@ export default function InjuryView({
             choose <span className="font-semibold text-brand-ink">Mark as Injured</span>.
           </div>
         )}
-      </article>
+      </div>
+
+      {selectedDetail ? (
+        <div ref={detailRef}>
+          <InjuryDetailPanel
+            detail={selectedDetail}
+            onReturnToList={() =>
+              tableRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+              })
+            }
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

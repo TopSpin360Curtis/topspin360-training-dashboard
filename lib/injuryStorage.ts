@@ -15,6 +15,8 @@ const TEAM_DEFAULT_INJURIES: PlayerInjuryMap = {
       type: "head",
       label: "Concussion",
       weekLabel: "Week 11",
+      status: "No data",
+      notes: ["No training sessions saved under his name."],
       createdAt: "2025-11-16T12:00:00.000Z"
     }
   ],
@@ -24,6 +26,7 @@ const TEAM_DEFAULT_INJURIES: PlayerInjuryMap = {
       type: "head",
       label: "Concussion / Wrist Injury",
       weekLabel: "Week 4",
+      status: "Under review",
       createdAt: "2025-09-28T12:00:00.000Z"
     }
   ],
@@ -33,6 +36,7 @@ const TEAM_DEFAULT_INJURIES: PlayerInjuryMap = {
       type: "neck",
       label: "Neck Injury",
       weekLabel: "Week 5",
+      status: "Follow-up expected",
       createdAt: "2025-10-05T12:00:00.000Z"
     }
   ],
@@ -42,6 +46,7 @@ const TEAM_DEFAULT_INJURIES: PlayerInjuryMap = {
       type: "neck",
       label: "Neck",
       weekLabel: "Week 11",
+      notes: ["Interesting that RFD may not have been affected despite being on the injury report."],
       createdAt: "2025-11-16T12:00:00.000Z"
     }
   ],
@@ -51,6 +56,8 @@ const TEAM_DEFAULT_INJURIES: PlayerInjuryMap = {
       type: "head",
       label: "Concussion",
       weekLabel: "Week 14",
+      status: "No data",
+      notes: ["No training sessions saved under his name."],
       createdAt: "2025-12-04T12:00:00.000Z"
     },
     {
@@ -58,6 +65,8 @@ const TEAM_DEFAULT_INJURIES: PlayerInjuryMap = {
       type: "head",
       label: "Concussion",
       weekLabel: "Week 17",
+      status: "No data",
+      notes: ["No training sessions saved under his name."],
       createdAt: "2025-12-25T12:00:00.000Z"
     }
   ],
@@ -67,6 +76,7 @@ const TEAM_DEFAULT_INJURIES: PlayerInjuryMap = {
       type: "head",
       label: "Concussion",
       weekLabel: "Week 17",
+      status: "Single historical session",
       createdAt: "2025-12-25T12:00:00.000Z"
     }
   ]
@@ -91,7 +101,13 @@ function normalizeInjuryEntry(entry: unknown): PlayerInjury | null {
     type: injury.type,
     createdAt: typeof injury.createdAt === "string" ? injury.createdAt : undefined,
     label: typeof injury.label === "string" ? injury.label : undefined,
-    weekLabel: typeof injury.weekLabel === "string" ? injury.weekLabel : undefined
+    weekLabel: typeof injury.weekLabel === "string" ? injury.weekLabel : undefined,
+    weeksAffected:
+      typeof injury.weeksAffected === "number" ? injury.weeksAffected : undefined,
+    status: typeof injury.status === "string" ? injury.status : undefined,
+    notes: Array.isArray(injury.notes)
+      ? injury.notes.filter((note): note is string => typeof note === "string")
+      : undefined
   };
 }
 

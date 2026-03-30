@@ -19,9 +19,56 @@ export type PlayerInjury = {
   createdAt?: string;
   label?: string;
   weekLabel?: string;
+  weeksAffected?: number;
+  status?: string;
+  notes?: string[];
 };
 
 export type PlayerInjuryMap = Record<string, PlayerInjury[]>;
+
+export type InjuryRegisterRow = {
+  id: string;
+  player: string;
+  injury: PlayerInjury;
+  stats: PlayerStats;
+  hasTrainingData: boolean;
+  sessionsLabel: string;
+};
+
+export type InjuryDetailSession = TrainingSession & {
+  daysFromInjury: number;
+};
+
+export type InjuryMonthlySessionCount = {
+  monthLabel: string;
+  count: number;
+};
+
+export type InjuryTrendPoint = {
+  date: string;
+  maxRfdCCW: number;
+  maxRfdCW: number;
+  bestRfd: number;
+};
+
+export type InjuryDetailData = {
+  id: string;
+  player: string;
+  injury: PlayerInjury;
+  hasTrainingData: boolean;
+  totalSessions: number;
+  preInjurySessions: TrainingSession[];
+  postInjurySessions: InjuryDetailSession[];
+  latestPreInjurySession: TrainingSession | null;
+  firstPostInjurySessions: InjuryDetailSession[];
+  monthlyPreInjuryCounts: InjuryMonthlySessionCount[];
+  averagePreInjuryRfd: number | null;
+  daysBetweenLastSessionAndInjury: number | null;
+  weeksAffected: number | null;
+  statusLabel: string;
+  observations: string[];
+  trendSeries: InjuryTrendPoint[];
+};
 
 export type TrendStatus = "improving" | "plateauing" | "declining";
 
