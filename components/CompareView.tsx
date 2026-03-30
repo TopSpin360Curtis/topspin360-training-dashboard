@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -33,6 +34,17 @@ export default function CompareView({
   data,
   teamAverage
 }: CompareViewProps) {
+  const [playerFilter, setPlayerFilter] = useState("");
+  const filteredPlayers = useMemo(() => {
+    const query = playerFilter.trim().toLowerCase();
+
+    if (!query) {
+      return players;
+    }
+
+    return players.filter((player) => player.toLowerCase().includes(query));
+  }, [playerFilter, players]);
+  const maxSelected = selectedPlayers.length >= 6;
   const chartData = selectedPlayers.map((player) => getPlayerStats(data, player));
   const highestAvg = [...chartData].sort((left, right) => right.avgRFD - left.avgRFD)[0];
   const bestBalance = [...chartData].sort(
@@ -47,30 +59,79 @@ export default function CompareView({
     <div className="space-y-6">
       <article className="rounded-3xl border border-white/60 bg-white/95 p-5 shadow-soft">
         <div className="grid gap-4 lg:grid-cols-[1fr_2fr] lg:items-start">
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">
-              Compare up to 6 players
-            </span>
-            <select
-              multiple
-              value={selectedPlayers}
-              onChange={(event) =>
-                onSelectionChange(
-                  Array.from(event.target.selectedOptions, (option) => option.value).slice(
-                    0,
-                    6
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-medium text-slate-700">
+                Compare up to 6 players
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  onSelectionChange(
+                    selectedPlayers.length ? [] : players.slice(0, 6)
                   )
-                )
-              }
-              className="min-h-32 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
-            >
-              {players.map((player) => (
-                <option key={player} value={player}>
-                  {player}
-                </option>
-              ))}
-            </select>
-          </label>
+                }
+                className="text-xs font-semibold text-brand-blue transition hover:text-brand-ink"
+              >
+                {selectedPlayers.length ? "Clear all" : "Select all"}
+              </button>
+            </div>
+
+            <input
+              type="search"
+              value={playerFilter}
+              onChange={(event) => setPlayerFilter(event.target.value)}
+              placeholder="Filter players…"
+              className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+            />
+
+            <div className="max-h-[220px] overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
+              <div className="space-y-1">
+                {filteredPlayers.length ? (
+                  filteredPlayers.map((player) => {
+                    const isChecked = selectedPlayers.includes(player);
+                    const isDisabled = !isChecked && maxSelected;
+
+                    return (
+                      <label
+                        key={player}
+                        className={`flex min-h-[28px] cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-[12px] transition ${
+                          isDisabled
+                            ? "cursor-not-allowed text-slate-400"
+                            : "text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          disabled={isDisabled}
+                          onChange={() =>
+                            onSelectionChange(
+                              isChecked
+                                ? selectedPlayers.filter((value) => value !== player)
+                                : [...selectedPlayers, player].slice(0, 6)
+                            )
+                          }
+                          className="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+                        />
+                        <span>{player}</span>
+                      </label>
+                    );
+                  })
+                ) : (
+                  <p className="px-2 py-3 text-[12px] text-slate-500">
+                    No players match your filter.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {maxSelected ? (
+              <p className="text-xs font-medium text-slate-500">
+                Maximum 6 players selected
+              </p>
+            ) : null}
+          </div>
 
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
