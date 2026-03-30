@@ -17,9 +17,11 @@ export type PlayerInjury = {
   date: string;
   type: InjuryType;
   createdAt?: string;
+  label?: string;
+  weekLabel?: string;
 };
 
-export type PlayerInjuryMap = Record<string, PlayerInjury>;
+export type PlayerInjuryMap = Record<string, PlayerInjury[]>;
 
 export type TrendStatus = "improving" | "plateauing" | "declining";
 

@@ -877,7 +877,9 @@ export default function DashboardShell({
 
     setPlayerInjuries((current) => ({
       ...current,
-      [injuryModalPlayer]: injury
+      [injuryModalPlayer]: [...(current[injuryModalPlayer] ?? []), injury].sort((left, right) =>
+        left.date.localeCompare(right.date)
+      )
     }));
     setActiveTab("injury");
     setInjuryModalPlayer(null);
@@ -1345,7 +1347,11 @@ export default function DashboardShell({
       <InjuryModal
         open={Boolean(injuryModalPlayer)}
         player={injuryModalPlayer ?? ""}
-        initialInjury={injuryModalPlayer ? playerInjuries[injuryModalPlayer] : undefined}
+        initialInjury={
+          injuryModalPlayer
+            ? playerInjuries[injuryModalPlayer]?.at(-1)
+            : undefined
+        }
         onClose={() => setInjuryModalPlayer(null)}
         onSave={handleSavePlayerInjury}
       />

@@ -111,15 +111,11 @@ export default function Leaderboard({
                 index,
                 rows.length
               )}`}
+              onContextMenu={(event) => onPlayerContextMenu?.(row.player, event)}
             >
               <td className="px-4 py-4 font-semibold text-brand-ink">{row.rank}</td>
               <td className="px-4 py-4">
-                <p
-                  className="font-medium text-brand-ink"
-                  onContextMenu={(event) => onPlayerContextMenu?.(row.player, event)}
-                >
-                  {row.player}
-                </p>
+                <p className="font-medium text-brand-ink">{row.player}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <RiskBandBadge band={row.riskBand} />
                   <TrendStatusChip status={row.trendStatus} />

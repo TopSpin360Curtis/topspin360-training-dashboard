@@ -22,26 +22,25 @@ export default function InjuryView({
   injuries,
   teamAverage
 }: InjuryViewProps) {
-  const injuredRows = players
+  const injuryRows = players
     .map((player) => {
-      const injury = injuries[player];
+      const playerInjuries = injuries[player] ?? [];
+      const stats = getPlayerStats(data, player);
 
-      if (!injury) {
-        return null;
-      }
-
-      return {
+      return playerInjuries.map((injury, index) => ({
         player,
         injury,
-        stats: getPlayerStats(data, player)
-      };
+        stats,
+        id: `${player}-${injury.date}-${injury.type}-${index}`
+      }));
     })
-    .filter((row): row is NonNullable<typeof row> => Boolean(row))
+    .flat()
     .sort((left, right) => right.injury.date.localeCompare(left.injury.date));
 
-  const headCount = injuredRows.filter((row) => row.injury.type === "head").length;
-  const neckCount = injuredRows.filter((row) => row.injury.type === "neck").length;
-  const latestInjury = injuredRows[0];
+  const uniquePlayersImpacted = new Set(injuryRows.map((row) => row.player)).size;
+  const headCount = injuryRows.filter((row) => row.injury.type === "head").length;
+  const neckCount = injuryRows.filter((row) => row.injury.type === "neck").length;
+  const latestInjury = injuryRows[0];
 
   return (
     <div className="space-y-6">
@@ -65,9 +64,9 @@ export default function InjuryView({
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         {[
           {
-            label: "Active injuries",
-            value: String(injuredRows.length),
-            subtext: injuredRows.length ? "Players currently tagged" : "No current injuries"
+            label: "Injury records",
+            value: String(injuryRows.length),
+            subtext: injuryRows.length ? `${uniquePlayersImpacted} players impacted` : "No current injuries"
           },
           {
             label: "Head injuries",
@@ -107,7 +106,7 @@ export default function InjuryView({
           </p>
           <h3 className="text-xl font-semibold text-brand-ink">Player injury register</h3>
         </div>
-        {injuredRows.length ? (
+        {injuryRows.length ? (
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-50/80">
               <tr>
@@ -121,15 +120,27 @@ export default function InjuryView({
               </tr>
             </thead>
             <tbody>
-              {injuredRows.map((row) => (
-                <tr key={row.player} className="border-t border-slate-100">
+              {injuryRows.map((row) => (
+                <tr key={row.id} className="border-t border-slate-100">
                   <td className="px-4 py-4 font-semibold text-brand-ink">{row.player}</td>
                   <td className="px-4 py-4">
-                    <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
-                      {formatInjuryType(row.injury.type)}
-                    </span>
+                    <div className="space-y-2">
+                      <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
+                        {formatInjuryType(row.injury.type)}
+                      </span>
+                      {row.injury.label ? (
+                        <p className="text-xs text-slate-500">{row.injury.label}</p>
+                      ) : null}
+                    </div>
                   </td>
-                  <td className="px-4 py-4 text-slate-700">{formatDate(row.injury.date)}</td>
+                  <td className="px-4 py-4 text-slate-700">
+                    <div className="space-y-1">
+                      <p>{formatDate(row.injury.date)}</p>
+                      {row.injury.weekLabel ? (
+                        <p className="text-xs text-slate-500">{row.injury.weekLabel}</p>
+                      ) : null}
+                    </div>
+                  </td>
                   <td className="px-4 py-4 text-slate-700">{formatNumber(row.stats.avgRFD)}</td>
                   <td className="px-4 py-4 text-slate-700">{row.stats.sessions}</td>
                   <td className="px-4 py-4">
