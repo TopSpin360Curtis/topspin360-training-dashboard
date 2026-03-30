@@ -10,10 +10,12 @@ type NavbarProps = {
   dataProfile: DashboardProfile;
   onProfileChange: (value: DashboardProfile) => void;
   modeLocked?: boolean;
-  onExport: () => void;
+  onExportCsv: () => void;
+  onExportPdf: () => void;
   onSyncSheets: () => void;
   onShowAlerts: () => void;
   isSyncing: boolean;
+  isExportingPdf?: boolean;
   alertCount?: number;
   canLogout?: boolean;
 };
@@ -24,15 +26,18 @@ export default function Navbar({
   dataProfile,
   onProfileChange,
   modeLocked = false,
-  onExport,
+  onExportCsv,
+  onExportPdf,
   onSyncSheets,
   onShowAlerts,
   isSyncing,
+  isExportingPdf = false,
   alertCount = 0,
   canLogout = false
 }: NavbarProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", {
@@ -233,11 +238,21 @@ export default function Navbar({
                   type="button"
                   onClick={() => {
                     setMenuOpen(false);
-                    onExport();
+                    onExportCsv();
                   }}
                   className="min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
-                  Export
+                  Export CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onExportPdf();
+                  }}
+                  className="min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  {isExportingPdf ? "Exporting PDF..." : "Export PDF"}
                 </button>
               </div>
             ) : null}
@@ -263,13 +278,48 @@ export default function Navbar({
               {isSyncing ? "Syncing..." : "Sync Sheets"}
             </button>
 
-            <button
-              type="button"
-              onClick={onExport}
-              className="min-h-11 rounded-full bg-brand-orange px-4 py-2 text-sm font-semibold text-white transition hover:brightness-95"
-            >
-              Export
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setExportMenuOpen((current) => !current)}
+                className="min-h-11 rounded-full bg-brand-orange px-4 py-2 text-sm font-semibold text-white transition hover:brightness-95"
+              >
+                Export
+              </button>
+
+              {exportMenuOpen ? (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Close export menu"
+                    className="fixed inset-0 z-10 cursor-default"
+                    onClick={() => setExportMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 top-14 z-20 min-w-[180px] rounded-2xl border border-slate-200 bg-white p-2 shadow-soft">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExportMenuOpen(false);
+                        onExportCsv();
+                      }}
+                      className="min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Export CSV
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExportMenuOpen(false);
+                        onExportPdf();
+                      }}
+                      className="min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      {isExportingPdf ? "Exporting PDF..." : "Export PDF"}
+                    </button>
+                  </div>
+                </>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>

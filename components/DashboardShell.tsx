@@ -13,7 +13,6 @@ import {
   XAxis,
   YAxis
 } from "recharts";
-import { useReactToPrint } from "react-to-print";
 import AlertsModal from "@/components/AlertsModal";
 import CoachNotesPanel from "@/components/CoachNotesPanel";
 import CompareView from "@/components/CompareView";
@@ -57,6 +56,7 @@ import {
   getTotalRevolutions,
   getUniquePlayers
 } from "@/lib/dataUtils";
+import { exportElementToPdf } from "@/lib/exportPdf";
 import { loadPlayerInjuries, savePlayerInjuries } from "@/lib/injuryStorage";
 import { loadCoachNotes, saveCoachNotes } from "@/lib/notesStorage";
 import { sampleTrainingData } from "@/lib/sampleData";
@@ -297,6 +297,7 @@ export default function DashboardShell({
   const [sortKey, setSortKey] = useState<SortKey>("avgRFD");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [isSyncingSheets, setIsSyncingSheets] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [coachNotes, setCoachNotes] = useState<CoachNote[]>([]);
   const [dayViewMode, setDayViewMode] = useState<"team" | "individual">("team");
   const [selectedDayPlayer, setSelectedDayPlayer] = useState("");
@@ -314,7 +315,12 @@ export default function DashboardShell({
     dayOfWeek?: string;
     noteDate?: string;
   } | null>(null);
-  const printRef = useRef<HTMLDivElement>(null);
+  const overviewExportRef = useRef<HTMLElement | null>(null);
+  const trendsExportRef = useRef<HTMLElement | null>(null);
+  const compareExportRef = useRef<HTMLElement | null>(null);
+  const dayOfWeekExportRef = useRef<HTMLElement | null>(null);
+  const injuryExportRef = useRef<HTMLElement | null>(null);
+  const goalsExportRef = useRef<HTMLElement | null>(null);
   const [profileReady, setProfileReady] = useState(false);
 
   useEffect(() => {
@@ -434,11 +440,6 @@ export default function DashboardShell({
     daysOfWeek
   );
   const dayOfWeekInsights = getDayOfWeekInsights(dayOfWeekStats);
-
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: "TopSpin360 Training Dashboard"
-  });
 
   useEffect(() => {
     setCoachNotes(loadCoachNotes());
@@ -800,6 +801,33 @@ export default function DashboardShell({
     exportToCSV(filteredData);
   }
 
+  async function handleExportPdf() {
+    const tabTargets: Record<TabKey, HTMLElement | null> = {
+      overview: overviewExportRef.current,
+      trends: trendsExportRef.current,
+      compare: compareExportRef.current,
+      dayOfWeek: dayOfWeekExportRef.current,
+      injury: injuryExportRef.current,
+      goals: goalsExportRef.current
+    };
+    const target = tabTargets[activeTab];
+
+    if (!target || typeof window === "undefined") {
+      return;
+    }
+
+    setIsExportingPdf(true);
+
+    try {
+      await exportElementToPdf({
+        element: target,
+        fileName: `topspin360-${activeProfile}-${activeTab}.pdf`
+      });
+    } finally {
+      setIsExportingPdf(false);
+    }
+  }
+
   function scrollToReviewQueue() {
     document.getElementById("coach-review-queue")?.scrollIntoView({
       behavior: "smooth",
@@ -885,10 +913,12 @@ export default function DashboardShell({
         dataProfile={activeProfile}
         onProfileChange={handleProfileChange}
         modeLocked={modeLocked}
-        onExport={handleExportCsv}
+        onExportCsv={handleExportCsv}
+        onExportPdf={() => void handleExportPdf()}
         onSyncSheets={handleSyncSheets}
         onShowAlerts={() => setIsAlertsOpen(true)}
         isSyncing={isSyncingSheets}
+        isExportingPdf={isExportingPdf}
         alertCount={alerts.length}
         canLogout={passwordProtectionEnabled}
       />
@@ -913,7 +943,7 @@ export default function DashboardShell({
         onPlayerContextMenu={handlePlayerContextMenu}
       />
 
-      <main ref={printRef} className="print-panel mx-auto mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
+      <main className="print-panel mx-auto mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
         <section className="rounded-3xl border border-white/60 bg-gradient-to-r from-brand-blue to-sky-500 px-6 py-5 text-white shadow-soft">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -957,7 +987,7 @@ export default function DashboardShell({
         </section>
 
         {activeTab === "overview" ? (
-          <section className="mt-6 space-y-6">
+          <section ref={overviewExportRef} className="mt-6 space-y-6">
             <article className="rounded-3xl border border-white/60 bg-white/95 p-5 shadow-soft">
               <div className="grid gap-4 lg:grid-cols-4">
                 <div>
@@ -1149,7 +1179,7 @@ export default function DashboardShell({
         ) : null}
 
         {activeTab === "trends" ? (
-          <section className="mt-6 space-y-6">
+          <section ref={trendsExportRef} className="mt-6 space-y-6">
             <article className="no-print rounded-3xl border border-white/60 bg-white/95 p-5 shadow-soft">
               <div className="grid gap-4 md:grid-cols-[minmax(0,280px)_minmax(0,360px)] md:items-end">
                 <label className="space-y-2">
@@ -1212,7 +1242,7 @@ export default function DashboardShell({
         ) : null}
 
         {activeTab === "compare" ? (
-          <section className="mt-6">
+          <section ref={compareExportRef} className="mt-6">
             <CompareView
               players={getUniquePlayers(filteredData)}
               selectedPlayers={comparePlayers}
@@ -1225,7 +1255,7 @@ export default function DashboardShell({
         ) : null}
 
         {activeTab === "dayOfWeek" ? (
-          <section className="mt-6">
+          <section ref={dayOfWeekExportRef} className="mt-6">
             <DayOfWeekView
               data={dayOfWeekStats}
               heatmap={dayOfWeekHeatmap}
@@ -1245,7 +1275,7 @@ export default function DashboardShell({
         ) : null}
 
         {activeTab === "injury" ? (
-          <section className="mt-6">
+          <section ref={injuryExportRef} className="mt-6">
             <InjuryView
               players={profilePlayers}
               data={data}
@@ -1256,13 +1286,13 @@ export default function DashboardShell({
         ) : null}
 
         {activeTab === "goals" ? (
-          <section className="mt-6">
+          <section ref={goalsExportRef} className="mt-6">
             <GoalsView
               data={filteredData}
               players={getUniquePlayers(filteredData)}
               config={benchmarkConfig}
               onConfigChange={setBenchmarkConfig}
-              onExportPdf={() => void handlePrint?.()}
+              onExportPdf={() => void handleExportPdf()}
               onExportCsv={handleExportCsv}
               teamAverage={teamAverage}
               teamAverageChangePct={displayedChangePct}
