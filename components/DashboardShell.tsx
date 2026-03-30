@@ -156,6 +156,7 @@ function ReviewPanel({
   };
   const [showAll, setShowAll] = useState(false);
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const visibleRows = showAll ? rows : rows.slice(0, 4);
 
   return (
@@ -167,18 +168,28 @@ function ReviewPanel({
           </p>
           <h3 className="mt-2 text-lg font-semibold text-brand-ink">Transparent review queue</h3>
         </div>
-        {rows.length > 4 ? (
+        <div className="flex flex-wrap gap-2">
+          {rows.length > 4 ? (
+            <button
+              type="button"
+              onClick={() => setShowAll((current) => !current)}
+              className="min-h-11 rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+            >
+              {showAll ? "Show fewer" : `View all ${rows.length} →`}
+            </button>
+          ) : null}
           <button
             type="button"
-            onClick={() => setShowAll((current) => !current)}
+            onClick={() => setIsCollapsed((current) => !current)}
             className="min-h-11 rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
           >
-            {showAll ? "Show fewer" : `View all ${rows.length} →`}
+            {isCollapsed ? "Expand" : "Collapse"}
           </button>
-        ) : null}
+        </div>
       </div>
 
-      <div className="mt-4 flex gap-4 overflow-x-auto pb-1">
+      {!isCollapsed ? (
+        <div className="mt-4 flex gap-4 overflow-x-auto pb-1">
         {visibleRows.map((row) => {
           const isExpanded = expandedPlayer === row.player;
 
@@ -212,7 +223,12 @@ function ReviewPanel({
             No players are currently flagged in the active cohort.
           </div>
         ) : null}
-      </div>
+        </div>
+      ) : (
+        <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-500">
+          Coach review is collapsed. Expand to see flagged players.
+        </div>
+      )}
     </article>
   );
 }
@@ -755,8 +771,9 @@ export default function DashboardShell({
           </div>
         </section>
 
-        <section className="no-print sticky top-[76px] z-50 -mx-4 mt-6 border-b border-slate-200 bg-white px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)] sm:-mx-6 sm:top-[84px] sm:px-6 lg:-mx-8 lg:px-8">
-          <div className="flex flex-wrap gap-2">
+        <section className="no-print sticky top-[76px] z-50 -mx-4 mt-6 px-4 py-2 sm:-mx-6 sm:top-[84px] sm:px-6 lg:-mx-8 lg:px-8">
+          <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+            <div className="flex flex-wrap gap-2">
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -771,6 +788,7 @@ export default function DashboardShell({
               {tab.label}
             </button>
           ))}
+            </div>
           </div>
         </section>
 

@@ -76,6 +76,7 @@ export default function CollapsibleFilterBar({
 }: CollapsibleFilterBarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const didMountRef = useRef(false);
+  const contentRef = useRef<HTMLDivElement>(null);
   const filterSignature = useMemo(
     () =>
       JSON.stringify({
@@ -122,15 +123,16 @@ export default function CollapsibleFilterBar({
           <SummaryChip label="Date" value={formatDateRange(startDate, endDate)} />
           <SummaryChip label="Days" value={formatDaySummary(selectedDays)} />
         </div>
-        <span className="text-sm text-slate-400">{isOpen ? "Done" : "✎"}</span>
+        <span className="text-sm text-slate-400">{isOpen ? "⌃" : "✎"}</span>
       </button>
 
       <div
-        className={`overflow-hidden transition-[max-height] duration-200 ease-in-out ${
-          isOpen ? "max-h-[400px]" : "max-h-0"
-        }`}
+        className="overflow-hidden transition-[max-height] duration-200 ease-in-out"
+        style={{
+          maxHeight: isOpen ? `${contentRef.current?.scrollHeight ?? 0}px` : "0px"
+        }}
       >
-        <div className="border-t border-slate-100 px-4 pb-4 pt-3">
+        <div ref={contentRef} className="border-t border-slate-100 px-4 pb-4 pt-3">
           <div className="mb-3 flex justify-end">
             <button
               type="button"
