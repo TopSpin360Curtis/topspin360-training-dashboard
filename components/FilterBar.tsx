@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import CollapsibleFilterBar from "@/components/CollapsibleFilterBar";
 
 type FilterBarProps = {
   players: string[];
@@ -54,7 +55,14 @@ export default function FilterBar({
 
   return (
     <section className="no-print mx-auto mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="rounded-3xl border border-white/60 bg-white/90 p-4 shadow-soft backdrop-blur">
+      <CollapsibleFilterBar
+        selectedPlayers={selectedPlayers}
+        allPlayers={players}
+        startDate={startDate}
+        endDate={endDate}
+        selectedDays={selectedDays}
+        selectedCohort={selectedCohort}
+      >
         <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr_1fr_0.8fr]">
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
@@ -249,7 +257,7 @@ export default function FilterBar({
             </ul>
           </div>
         </div>
-      </div>
+      </CollapsibleFilterBar>
     </section>
   );
 }
