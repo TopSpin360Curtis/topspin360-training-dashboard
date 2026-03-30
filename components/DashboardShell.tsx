@@ -698,13 +698,14 @@ export default function DashboardShell({
           </div>
         </section>
 
-        <section className="no-print mt-6 flex flex-wrap gap-2">
+        <section className="no-print sticky top-[76px] z-50 -mx-4 mt-6 border-b border-slate-200 bg-white px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)] sm:-mx-6 sm:top-[84px] sm:px-6 lg:-mx-8 lg:px-8">
+          <div className="flex flex-wrap gap-2">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              className={`min-h-11 rounded-full px-4 py-2 text-sm font-semibold transition ${
                 activeTab === tab.key
                   ? "bg-brand-ink text-white"
                   : "bg-white/90 text-slate-600 hover:text-brand-ink"
@@ -713,6 +714,7 @@ export default function DashboardShell({
               {tab.label}
             </button>
           ))}
+          </div>
         </section>
 
         {activeTab === "overview" ? (

@@ -28,6 +28,10 @@ body {
   -webkit-print-color-adjust: exact;
 }
 
+.recharts-tooltip-wrapper {
+  z-index: 100 !important;
+}
+
 @media print {
   body {
     background: #ffffff;
