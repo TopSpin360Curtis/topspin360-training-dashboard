@@ -48,19 +48,21 @@ function Gauge({
   const percentage = maxValue ? Math.min(100, (value / maxValue) * 100) : 0;
 
   return (
-    <div className="rounded-3xl border border-white/60 bg-white/95 p-5 shadow-soft">
-      <p className="text-sm font-semibold text-brand-ink">{label}</p>
+    <div className="rounded-xl border border-white/60 bg-white/95 p-4 shadow-soft">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+        {label}
+      </p>
       <div
-        className="mx-auto mt-5 flex h-40 w-40 items-center justify-center rounded-full"
+        className="mx-auto mt-4 flex h-[100px] w-[100px] items-center justify-center rounded-full"
         style={{
           background: `conic-gradient(${color} ${percentage * 1.8}deg, rgba(16, 33, 58, 0.08) 0deg)`
         }}
       >
-        <div className="flex h-28 w-28 flex-col items-center justify-center rounded-full bg-white">
-          <span className="text-2xl font-semibold text-brand-ink">
+        <div className="flex h-[72px] w-[72px] flex-col items-center justify-center rounded-full bg-white">
+          <span className="text-lg font-semibold text-brand-ink">
             {formatNumber(value)}
           </span>
-          <span className="text-xs uppercase tracking-[0.18em] text-slate-400">
+          <span className="mt-1 text-[10px] uppercase tracking-[0.18em] text-slate-400">
             {Math.round(percentage)}%
           </span>
         </div>
@@ -145,62 +147,60 @@ export default function TrendCharts({
         </article>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
-        <article className="rounded-3xl border border-white/60 bg-white/95 p-5 shadow-soft">
-          <div className="mb-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
-              Trends
-            </p>
-            <h3 className="text-xl font-semibold text-brand-ink">
-              {player} Best RFD Trend
-            </h3>
-          </div>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={sessions}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#d9e2ef" />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(value) => formatDate(value)}
-                  stroke="#6b7280"
-                />
-                <YAxis stroke="#6b7280" />
-                <Tooltip
-                  formatter={(value: number) => formatNumber(value)}
-                  labelFormatter={(value) => formatDate(String(value))}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="bestRfd"
-                  stroke="#10213a"
-                  strokeWidth={3}
-                  name="Best RFD"
-                  dot={{ r: 3 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="rollingBest"
-                  stroke="#1a6fc4"
-                  strokeWidth={3}
-                  name="Rolling Avg"
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="teamAverage"
-                  stroke="#e88c3a"
-                  strokeDasharray="6 4"
-                  strokeWidth={2}
-                  name="Team Avg"
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </article>
+      <article className="rounded-3xl border border-white/60 bg-white/95 p-5 shadow-soft">
+        <div className="mb-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
+            Trends
+          </p>
+          <h3 className="text-xl font-semibold text-brand-ink">
+            {player} Best RFD Trend
+          </h3>
+        </div>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={sessions}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#d9e2ef" />
+              <XAxis
+                dataKey="date"
+                tickFormatter={(value) => formatDate(value)}
+                stroke="#6b7280"
+              />
+              <YAxis stroke="#6b7280" />
+              <Tooltip
+                formatter={(value: number) => formatNumber(value)}
+                labelFormatter={(value) => formatDate(String(value))}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="bestRfd"
+                stroke="#10213a"
+                strokeWidth={3}
+                name="Best RFD"
+                dot={{ r: 3 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="rollingBest"
+                stroke="#1a6fc4"
+                strokeWidth={3}
+                name="Rolling Avg"
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="teamAverage"
+                stroke="#e88c3a"
+                strokeDasharray="6 4"
+                strokeWidth={2}
+                name="Team Avg"
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+        <div className="mt-6 grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 md:grid-cols-2 xl:grid-cols-4">
           <Gauge
             label="Best RFD All-Time (CCW)"
             value={metrics.allTimeCCW}
@@ -226,7 +226,7 @@ export default function TrendCharts({
             color="#e88c3a"
           />
         </div>
-      </div>
+      </article>
 
       <article className="rounded-3xl border border-white/60 bg-white/95 p-5 shadow-soft">
         <div className="mb-4">
