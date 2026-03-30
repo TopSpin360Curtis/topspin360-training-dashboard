@@ -82,6 +82,33 @@ const TEAM_DEFAULT_INJURIES: PlayerInjuryMap = {
   ]
 };
 
+const TEST_DEFAULT_INJURIES: PlayerInjuryMap = {
+  "Tinker Bell": [
+    {
+      date: "2025-10-18",
+      type: "head",
+      label: "Concussion",
+      createdAt: "2025-10-18T12:00:00.000Z"
+    }
+  ],
+  "Lightning McQueen": [
+    {
+      date: "2025-12-07",
+      type: "head",
+      label: "Concussion",
+      createdAt: "2025-12-07T12:00:00.000Z"
+    }
+  ],
+  "Wendy Darling": [
+    {
+      date: "2026-02-14",
+      type: "head",
+      label: "Concussion",
+      createdAt: "2026-02-14T12:00:00.000Z"
+    }
+  ]
+};
+
 function normalizeInjuryEntry(entry: unknown): PlayerInjury | null {
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
     return null;
@@ -156,7 +183,11 @@ function mergeInjuryMaps(base: PlayerInjuryMap, custom: PlayerInjuryMap) {
 }
 
 function getDefaultPlayerInjuries(profile: DashboardProfile): PlayerInjuryMap {
-  return profile === "team" ? TEAM_DEFAULT_INJURIES : {};
+  if (profile === "team") {
+    return TEAM_DEFAULT_INJURIES;
+  }
+
+  return TEST_DEFAULT_INJURIES;
 }
 
 export function getInjuryStorageKey(profile: DashboardProfile) {
