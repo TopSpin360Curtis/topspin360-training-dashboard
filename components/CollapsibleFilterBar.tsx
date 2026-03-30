@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { ReactNode, useRef, useState } from "react";
 
 type CollapsibleFilterBarProps = {
   selectedPlayers: string[];
@@ -75,28 +75,7 @@ export default function CollapsibleFilterBar({
   children
 }: CollapsibleFilterBarProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const didMountRef = useRef(false);
   const contentRef = useRef<HTMLDivElement>(null);
-  const filterSignature = useMemo(
-    () =>
-      JSON.stringify({
-        players: [...selectedPlayers].sort(),
-        startDate,
-        endDate,
-        days: [...selectedDays].sort(),
-        cohort: selectedCohort ?? ""
-      }),
-    [endDate, selectedCohort, selectedDays, selectedPlayers, startDate]
-  );
-
-  useEffect(() => {
-    if (!didMountRef.current) {
-      didMountRef.current = true;
-      return;
-    }
-
-    setIsOpen(false);
-  }, [filterSignature]);
 
   return (
     <div className="rounded-3xl border border-white/60 bg-white/90 shadow-soft backdrop-blur">
