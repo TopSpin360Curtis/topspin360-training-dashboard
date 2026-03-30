@@ -967,7 +967,10 @@ export default function DashboardShell({
           </div>
         </section>
 
-        <section className="no-print sticky top-[76px] z-50 -mx-4 mt-6 px-4 py-2 sm:-mx-6 sm:top-[84px] sm:px-6 lg:-mx-8 lg:px-8">
+        <section
+          className="no-print sticky z-40 -mx-4 mt-6 px-4 py-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+          style={{ top: "calc(var(--topspin-navbar-height, 84px) + 8px)" }}
+        >
           <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
             <div className="flex flex-wrap gap-2">
           {tabs.map((tab) => (

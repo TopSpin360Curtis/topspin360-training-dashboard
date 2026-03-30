@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DashboardProfile } from "@/lib/types";
 
@@ -36,8 +36,38 @@ export default function Navbar({
   canLogout = false
 }: NavbarProps) {
   const router = useRouter();
+  const headerRef = useRef<HTMLElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !headerRef.current) {
+      return;
+    }
+
+    const element = headerRef.current;
+
+    const updateHeight = () => {
+      document.documentElement.style.setProperty(
+        "--topspin-navbar-height",
+        `${element.offsetHeight}px`
+      );
+    };
+
+    updateHeight();
+
+    const observer = new ResizeObserver(() => {
+      updateHeight();
+    });
+
+    observer.observe(element);
+    window.addEventListener("resize", updateHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateHeight);
+    };
+  }, []);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", {
@@ -48,7 +78,10 @@ export default function Navbar({
   }
 
   return (
-    <header className="no-print sticky top-0 z-20 border-b border-white/40 bg-white/85 backdrop-blur">
+    <header
+      ref={headerRef}
+      className="no-print sticky top-0 z-[60] border-b border-white/40 bg-white/85 backdrop-blur"
+    >
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-blue text-sm font-bold text-white shadow-soft">
