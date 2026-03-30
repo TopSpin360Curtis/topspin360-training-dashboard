@@ -1279,10 +1279,12 @@ export default function DashboardShell({
         {activeTab === "injury" ? (
           <section ref={injuryExportRef} className="mt-6">
             <InjuryView
+              availablePlayers={profilePlayers}
               players={profilePlayers}
               data={data}
               injuries={playerInjuries}
               teamAverage={teamAverage}
+              onAddInjuryRequest={handleOpenInjuryModal}
             />
           </section>
         ) : null}

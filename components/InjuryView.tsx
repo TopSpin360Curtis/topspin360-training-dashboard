@@ -13,10 +13,12 @@ import {
 import type { PlayerInjuryMap, TrainingSession } from "@/lib/types";
 
 type InjuryViewProps = {
+  availablePlayers: string[];
   players: string[];
   data: TrainingSession[];
   injuries: PlayerInjuryMap;
   teamAverage: number;
+  onAddInjuryRequest: (player: string) => void;
 };
 
 function formatInjuryType(value: "head" | "neck") {
@@ -24,12 +26,16 @@ function formatInjuryType(value: "head" | "neck") {
 }
 
 export default function InjuryView({
+  availablePlayers,
   players,
   data,
   injuries,
-  teamAverage
+  teamAverage,
+  onAddInjuryRequest
 }: InjuryViewProps) {
   const [selectedInjuryId, setSelectedInjuryId] = useState<string | null>(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [playerSearch, setPlayerSearch] = useState("");
   const tableRef = useRef<HTMLDivElement | null>(null);
   const detailRef = useRef<HTMLDivElement | null>(null);
 
@@ -50,6 +56,22 @@ export default function InjuryView({
         : null,
     [data, selectedRow]
   );
+  const searchablePlayers = useMemo(
+    () =>
+      Array.from(new Set([...availablePlayers, ...Object.keys(injuries)])).sort((left, right) =>
+        left.localeCompare(right)
+      ),
+    [availablePlayers, injuries]
+  );
+  const filteredSearchPlayers = useMemo(() => {
+    const query = playerSearch.trim().toLowerCase();
+
+    if (!query) {
+      return searchablePlayers;
+    }
+
+    return searchablePlayers.filter((player) => player.toLowerCase().includes(query));
+  }, [playerSearch, searchablePlayers]);
 
   useEffect(() => {
     if (!injuryRows.length) {
@@ -89,6 +111,66 @@ export default function InjuryView({
             Click any injury row for a deeper pre and post-injury drill-down. Players with no
             recorded training data still stay visible here.
           </p>
+        </div>
+        <div className="mt-5 border-t border-slate-100 pt-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
+                Add injury
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Search for a player, then open the injury prompt to save a new record.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAddOpen((current) => !current)}
+              className="min-h-11 rounded-full bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition hover:brightness-95"
+            >
+              {isAddOpen ? "Close" : "Add injury"}
+            </button>
+          </div>
+
+          {isAddOpen ? (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700">Search player</span>
+                <input
+                  type="text"
+                  value={playerSearch}
+                  onChange={(event) => setPlayerSearch(event.target.value)}
+                  placeholder="Search for a player name..."
+                  className="mt-2 min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+                />
+              </label>
+
+              <div className="mt-3 max-h-64 overflow-y-auto rounded-2xl border border-slate-200 bg-white">
+                {filteredSearchPlayers.length ? (
+                  filteredSearchPlayers.map((player) => (
+                    <button
+                      key={player}
+                      type="button"
+                      onClick={() => {
+                        setIsAddOpen(false);
+                        setPlayerSearch("");
+                        onAddInjuryRequest(player);
+                      }}
+                      className="flex min-h-11 w-full items-center justify-between border-b border-slate-100 px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50 last:border-b-0"
+                    >
+                      <span className="font-medium text-brand-ink">{player}</span>
+                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-blue/70">
+                        Select
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-5 text-sm text-slate-500">
+                    No players match that search yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
         </div>
       </article>
 
