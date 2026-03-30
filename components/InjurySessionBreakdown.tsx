@@ -4,6 +4,7 @@ import InjuryNoDataState from "@/components/InjuryNoDataState";
 import { formatDate, formatNumber } from "@/lib/dataUtils";
 import type {
   InjuryDetailSession,
+  InjuryLookbackWindow,
   InjuryMonthlySessionCount,
   TrainingSession
 } from "@/lib/types";
@@ -14,6 +15,7 @@ type InjurySessionBreakdownProps = {
   totalSessions: number;
   averageRfd?: number | null;
   monthlyCounts?: InjuryMonthlySessionCount[];
+  lookbacks?: InjuryLookbackWindow[];
   latestSession?: TrainingSession | null;
   daysBetween?: number | null;
   postSessions?: InjuryDetailSession[];
@@ -27,6 +29,7 @@ export default function InjurySessionBreakdown({
   totalSessions,
   averageRfd,
   monthlyCounts = [],
+  lookbacks = [],
   latestSession,
   daysBetween,
   postSessions = [],
@@ -74,6 +77,39 @@ export default function InjurySessionBreakdown({
               </p>
             </div>
           </div>
+
+          {lookbacks.length ? (
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+              <p className="text-sm font-semibold text-brand-ink">
+                Training windows before injury
+              </p>
+              <div className="mt-3 grid gap-3 md:grid-cols-3">
+                {lookbacks.map((window) => (
+                  <div key={window.days} className="rounded-2xl bg-white p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      Last {window.days} days
+                    </p>
+                    <p className="mt-2 text-2xl font-semibold text-brand-ink">
+                      {window.sessionCount}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {window.sessionCount === 1 ? "training session" : "training sessions"}
+                    </p>
+                    <div className="mt-3 space-y-1 text-sm text-slate-600">
+                      <p>
+                        Avg RFD:{" "}
+                        {window.averageRfd !== null ? formatNumber(window.averageRfd) : "—"}
+                      </p>
+                      <p>
+                        Latest:{" "}
+                        {window.latestSessionDate ? formatDate(window.latestSessionDate) : "No session"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           {latestSession ? (
             <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">

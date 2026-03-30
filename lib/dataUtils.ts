@@ -4,6 +4,7 @@ import type {
   CoachNote,
   InjuryDetailData,
   InjuryDetailSession,
+  InjuryLookbackWindow,
   InjuryMonthlySessionCount,
   InjuryRegisterRow,
   InjuryTrendPoint,
@@ -134,6 +135,12 @@ function getDaysBetween(from: string, to: string) {
   const start = new Date(`${from}T12:00:00`);
   const end = new Date(`${to}T12:00:00`);
   return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function getDateDaysBefore(anchor: string, days: number) {
+  const date = new Date(`${anchor}T12:00:00`);
+  date.setDate(date.getDate() - days);
+  return date.toISOString().slice(0, 10);
 }
 
 export function formatNumber(value: number) {
@@ -750,6 +757,19 @@ export function getInjuryDetailData(
       count
     })
   );
+  const preInjuryLookbacks: InjuryLookbackWindow[] = [30, 60, 120].map((days) => {
+    const cutoff = getDateDaysBefore(injury.date, days);
+    const lookbackSessions = preInjurySessions.filter((session) => session.date >= cutoff);
+
+    return {
+      days: days as 30 | 60 | 120,
+      sessionCount: lookbackSessions.length,
+      averageRfd: lookbackSessions.length
+        ? average(lookbackSessions.map((session) => session.bestRfd))
+        : null,
+      latestSessionDate: lookbackSessions.at(-1)?.date ?? null
+    };
+  });
 
   const averagePreInjuryRfd = preInjurySessions.length
     ? average(preInjurySessions.map((session) => session.bestRfd))
@@ -816,6 +836,7 @@ export function getInjuryDetailData(
     latestPreInjurySession,
     firstPostInjurySessions,
     monthlyPreInjuryCounts,
+    preInjuryLookbacks,
     averagePreInjuryRfd,
     daysBetweenLastSessionAndInjury,
     weeksAffected,

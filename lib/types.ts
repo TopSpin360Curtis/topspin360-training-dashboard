@@ -44,6 +44,13 @@ export type InjuryMonthlySessionCount = {
   count: number;
 };
 
+export type InjuryLookbackWindow = {
+  days: 30 | 60 | 120;
+  sessionCount: number;
+  averageRfd: number | null;
+  latestSessionDate: string | null;
+};
+
 export type InjuryTrendPoint = {
   date: string;
   maxRfdCCW: number;
@@ -62,6 +69,7 @@ export type InjuryDetailData = {
   latestPreInjurySession: TrainingSession | null;
   firstPostInjurySessions: InjuryDetailSession[];
   monthlyPreInjuryCounts: InjuryMonthlySessionCount[];
+  preInjuryLookbacks: InjuryLookbackWindow[];
   averagePreInjuryRfd: number | null;
   daysBetweenLastSessionAndInjury: number | null;
   weeksAffected: number | null;

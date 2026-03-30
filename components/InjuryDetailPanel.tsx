@@ -44,6 +44,7 @@ export default function InjuryDetailPanel({
           totalSessions={detail.preInjurySessions.length}
           averageRfd={detail.averagePreInjuryRfd}
           monthlyCounts={detail.monthlyPreInjuryCounts}
+          lookbacks={detail.preInjuryLookbacks}
           latestSession={detail.latestPreInjurySession}
           daysBetween={detail.daysBetweenLastSessionAndInjury}
           emptyTitle="No pre-injury sessions"
