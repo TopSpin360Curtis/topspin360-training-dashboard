@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  AUTH_MODE_COOKIE_NAME,
+  getDashboardModeFromCookieValue,
+  isPasswordProtectionEnabled
+} from "@/lib/auth";
+import {
   fetchGoogleSheetData,
   fetchPrivateGoogleSheetData,
   getServiceAccountCredentialsFromEnv
@@ -32,7 +37,15 @@ function getProfileConfig(profile: DashboardProfile) {
 export async function GET(request: NextRequest) {
   try {
     const requestedProfile = request.nextUrl.searchParams.get("profile");
-    const profile: DashboardProfile = requestedProfile === "test" ? "test" : "team";
+    const sessionProfile = getDashboardModeFromCookieValue(
+      request.cookies.get(AUTH_MODE_COOKIE_NAME)?.value
+    );
+    const profile: DashboardProfile =
+      isPasswordProtectionEnabled() && sessionProfile
+        ? sessionProfile
+        : requestedProfile === "test"
+          ? "test"
+          : "team";
     const { sheetId, range, publicSheetId, apiKey } = getProfileConfig(profile);
     const serviceAccount = getServiceAccountCredentialsFromEnv();
     const profileLabel = profile === "test" ? "test" : "team";
@@ -84,7 +97,15 @@ export async function GET(request: NextRequest) {
         ? error.message
         : "Unable to load Google Sheets data.";
     const requestedProfile = request.nextUrl.searchParams.get("profile");
-    const profile: DashboardProfile = requestedProfile === "test" ? "test" : "team";
+    const sessionProfile = getDashboardModeFromCookieValue(
+      request.cookies.get(AUTH_MODE_COOKIE_NAME)?.value
+    );
+    const profile: DashboardProfile =
+      isPasswordProtectionEnabled() && sessionProfile
+        ? sessionProfile
+        : requestedProfile === "test"
+          ? "test"
+          : "team";
 
     return NextResponse.json(
       {

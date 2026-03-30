@@ -2,8 +2,15 @@
 
 import { FormEvent, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import type { DashboardProfile } from "@/lib/types";
 
-export default function LoginForm({ nextPath }: { nextPath: string }) {
+export default function LoginForm({
+  nextPath,
+  mode
+}: {
+  nextPath: string;
+  mode: DashboardProfile;
+}) {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,7 +25,7 @@ export default function LoginForm({ nextPath }: { nextPath: string }) {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ password })
+      body: JSON.stringify({ password, mode })
     });
 
     if (!response.ok) {
@@ -59,7 +66,7 @@ export default function LoginForm({ nextPath }: { nextPath: string }) {
         disabled={isPending}
         className="w-full rounded-2xl bg-brand-blue px-4 py-3 text-sm font-semibold text-white transition hover:brightness-95 disabled:cursor-wait disabled:opacity-70"
       >
-        {isPending ? "Opening dashboard..." : "Enter Dashboard"}
+        {isPending ? "Opening dashboard..." : `Enter ${mode === "team" ? "Team" : "Test"} Dashboard`}
       </button>
     </form>
   );

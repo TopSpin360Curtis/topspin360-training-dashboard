@@ -1,6 +1,13 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { AUTH_COOKIE_NAME, getExpectedPasswordHash } from "@/lib/auth";
+import {
+  AUTH_COOKIE_NAME,
+  AUTH_MODE_COOKIE_NAME,
+  DEFAULT_AUTH_MODE,
+  getDashboardModeFromCookieValue,
+  getExpectedPasswordHash,
+  getLoginPathForMode
+} from "@/lib/auth";
 
 const PUBLIC_PATH_PREFIXES = ["/_next", "/login"];
 const PUBLIC_EXACT_PATHS = ["/favicon.ico", "/api/auth/login", "/api/auth/logout"];
@@ -22,8 +29,11 @@ export async function middleware(request: NextRequest) {
   }
 
   const authCookie = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const modeCookie = getDashboardModeFromCookieValue(
+    request.cookies.get(AUTH_MODE_COOKIE_NAME)?.value
+  );
 
-  if (authCookie === expectedHash) {
+  if (authCookie === expectedHash && modeCookie) {
     return NextResponse.next();
   }
 
@@ -37,7 +47,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const loginUrl = request.nextUrl.clone();
-  loginUrl.pathname = "/login";
+  loginUrl.pathname = getLoginPathForMode(modeCookie ?? DEFAULT_AUTH_MODE);
   loginUrl.searchParams.set("next", `${pathname}${search}`);
 
   return NextResponse.redirect(loginUrl);

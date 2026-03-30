@@ -267,13 +267,20 @@ function ReviewPanel({
 }
 
 export default function DashboardShell({
-  passwordProtectionEnabled = false
+  passwordProtectionEnabled = false,
+  authenticatedProfile = null
 }: {
   passwordProtectionEnabled?: boolean;
+  authenticatedProfile?: DashboardProfile | null;
 }) {
-  const [activeProfile, setActiveProfile] = useState<DashboardProfile>("team");
+  const modeLocked = Boolean(passwordProtectionEnabled && authenticatedProfile);
+  const [activeProfile, setActiveProfile] = useState<DashboardProfile>(
+    authenticatedProfile ?? "team"
+  );
   const [data, setData] = useState<TrainingSession[]>(sampleTrainingData);
-  const [sourceMeta, setSourceMeta] = useState<DataSourceMeta>(getDefaultSourceMeta("team"));
+  const [sourceMeta, setSourceMeta] = useState<DataSourceMeta>(
+    getDefaultSourceMeta(authenticatedProfile ?? "team")
+  );
   const [viewMode, setViewMode] = useState<"individual" | "team">("team");
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [selectedCohort, setSelectedCohort] = useState<CohortKey>("all");
@@ -309,6 +316,12 @@ export default function DashboardShell({
   } | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const [profileReady, setProfileReady] = useState(false);
+
+  useEffect(() => {
+    if (modeLocked && authenticatedProfile && activeProfile !== authenticatedProfile) {
+      setActiveProfile(authenticatedProfile);
+    }
+  }, [activeProfile, authenticatedProfile, modeLocked]);
 
   const dateBounds = useMemo(() => getDateBounds(data), [data]);
   const filteredByDate = useMemo(
@@ -483,6 +496,14 @@ export default function DashboardShell({
     setPlayerInjuries(loadPlayerInjuries(activeProfile));
     setProfileReady(true);
   }, [activeProfile]);
+
+  function handleProfileChange(nextProfile: DashboardProfile) {
+    if (modeLocked) {
+      return;
+    }
+
+    setActiveProfile(nextProfile);
+  }
 
   useEffect(() => {
     const bounds = getDateBounds(data);
@@ -862,7 +883,8 @@ export default function DashboardShell({
         viewMode={viewMode}
         onViewChange={handleViewChange}
         dataProfile={activeProfile}
-        onProfileChange={setActiveProfile}
+        onProfileChange={handleProfileChange}
+        modeLocked={modeLocked}
         onExport={handleExportCsv}
         onSyncSheets={handleSyncSheets}
         onShowAlerts={() => setIsAlertsOpen(true)}
