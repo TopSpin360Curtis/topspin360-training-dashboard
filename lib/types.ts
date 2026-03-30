@@ -11,6 +11,15 @@ export type TrainingSession = {
 export type DashboardProfile = "team" | "test";
 
 export type RiskBand = "high" | "moderate" | "lower" | "lowest";
+export type InjuryType = "head" | "neck";
+
+export type PlayerInjury = {
+  date: string;
+  type: InjuryType;
+  createdAt?: string;
+};
+
+export type PlayerInjuryMap = Record<string, PlayerInjury>;
 
 export type TrendStatus = "improving" | "plateauing" | "declining";
 

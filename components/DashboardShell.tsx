@@ -1,5 +1,6 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Papa from "papaparse";
 import {
@@ -19,6 +20,8 @@ import CompareView from "@/components/CompareView";
 import DayOfWeekView from "@/components/DayOfWeekView";
 import FilterBar from "@/components/FilterBar";
 import GoalsView from "@/components/GoalsView";
+import InjuryModal from "@/components/InjuryModal";
+import InjuryView from "@/components/InjuryView";
 import Leaderboard from "@/components/Leaderboard";
 import Navbar from "@/components/Navbar";
 import RiskBandBadge from "@/components/RiskBandBadge";
@@ -54,6 +57,7 @@ import {
   getTotalRevolutions,
   getUniquePlayers
 } from "@/lib/dataUtils";
+import { loadPlayerInjuries, savePlayerInjuries } from "@/lib/injuryStorage";
 import { loadCoachNotes, saveCoachNotes } from "@/lib/notesStorage";
 import { sampleTrainingData } from "@/lib/sampleData";
 import type {
@@ -61,12 +65,14 @@ import type {
   CoachNote,
   DataSourceMeta,
   DashboardProfile,
+  PlayerInjury,
+  PlayerInjuryMap,
   PlayerAlert,
   ReviewPriority,
   TrainingSession
 } from "@/lib/types";
 
-type TabKey = "overview" | "trends" | "compare" | "dayOfWeek" | "goals";
+type TabKey = "overview" | "trends" | "compare" | "dayOfWeek" | "injury" | "goals";
 type SortKey =
   | "rank"
   | "player"
@@ -160,13 +166,15 @@ function SectionPanel({
 }
 
 function ReviewPanel({
-  rows
+  rows,
+  onPlayerContextMenu
 }: {
   rows: Array<{
     player: string;
     reviewPriority: ReviewPriority;
     reviewReasons: string[];
   }>;
+  onPlayerContextMenu?: (player: string, event: MouseEvent<HTMLElement>) => void;
 }) {
   const toneMap: Record<ReviewPriority, string> = {
     high: "border-rose-300 bg-rose-50/90 text-rose-700",
@@ -225,6 +233,7 @@ function ReviewPanel({
                 setExpandedPlayer((current) => (current === row.player ? null : row.player))
               }
               className={`min-h-[138px] min-w-[220px] flex-1 rounded-2xl border-l-4 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${toneMap[row.reviewPriority]}`}
+              onContextMenu={(event) => onPlayerContextMenu?.(row.player, event)}
             >
               <div className="flex items-start justify-between gap-3">
                 <p className="text-sm font-semibold text-brand-ink">{row.player}</p>
@@ -286,6 +295,13 @@ export default function DashboardShell({
   const [selectedDayPlayer, setSelectedDayPlayer] = useState("");
   const [alerts, setAlerts] = useState<PlayerAlert[]>([]);
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
+  const [playerInjuries, setPlayerInjuries] = useState<PlayerInjuryMap>({});
+  const [contextMenu, setContextMenu] = useState<{
+    player: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  const [injuryModalPlayer, setInjuryModalPlayer] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState<{
     playerName?: string;
     dayOfWeek?: string;
@@ -316,6 +332,7 @@ export default function DashboardShell({
     [teamScopeData, selectedCohort, cohortPlayers]
   );
   const players = useMemo(() => getUniquePlayers(cohortData), [cohortData]);
+  const profilePlayers = useMemo(() => getUniquePlayers(data), [data]);
   const filteredData = useMemo(
     () => filterByPlayers(cohortData, selectedPlayers),
     [cohortData, selectedPlayers]
@@ -463,6 +480,7 @@ export default function DashboardShell({
     setTrendPlayerSearch("");
     setComparePlayers(nextPlayers.slice(0, 3));
     setSelectedDayPlayer(nextPlayers[0] ?? "");
+    setPlayerInjuries(loadPlayerInjuries(activeProfile));
     setProfileReady(true);
   }, [activeProfile]);
 
@@ -568,8 +586,42 @@ export default function DashboardShell({
   }, [coachNotes]);
 
   useEffect(() => {
+    if (!profileReady) {
+      return;
+    }
+
+    savePlayerInjuries(activeProfile, playerInjuries);
+  }, [activeProfile, playerInjuries, profileReady]);
+
+  useEffect(() => {
     setAlerts(getHighPriorityAlerts(selectedPlayers.length ? filteredData : cohortData, teamScopeData));
   }, [cohortData, filteredData, selectedPlayers.length, teamScopeData]);
+
+  useEffect(() => {
+    if (!contextMenu) {
+      return;
+    }
+
+    function handleDismiss() {
+      setContextMenu(null);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setContextMenu(null);
+      }
+    }
+
+    window.addEventListener("click", handleDismiss);
+    window.addEventListener("scroll", handleDismiss, true);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("click", handleDismiss);
+      window.removeEventListener("scroll", handleDismiss, true);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [contextMenu]);
 
   function handleSortChange(nextKey: SortKey) {
     if (sortKey === nextKey) {
@@ -579,6 +631,18 @@ export default function DashboardShell({
 
     setSortKey(nextKey);
     setSortDirection(nextKey === "player" ? "asc" : "desc");
+  }
+
+  function handlePlayerContextMenu(
+    player: string,
+    event: MouseEvent<HTMLElement>
+  ) {
+    event.preventDefault();
+    setContextMenu({
+      player,
+      x: event.clientX,
+      y: event.clientY
+    });
   }
 
   function handleCsvUpload(file: File) {
@@ -752,6 +816,24 @@ export default function DashboardShell({
     setIsAlertsOpen(false);
   }
 
+  function handleOpenInjuryModal(player: string) {
+    setContextMenu(null);
+    setInjuryModalPlayer(player);
+  }
+
+  function handleSavePlayerInjury(injury: PlayerInjury) {
+    if (!injuryModalPlayer) {
+      return;
+    }
+
+    setPlayerInjuries((current) => ({
+      ...current,
+      [injuryModalPlayer]: injury
+    }));
+    setActiveTab("injury");
+    setInjuryModalPlayer(null);
+  }
+
   const tabs: Array<{
     key: TabKey;
     label: string;
@@ -760,6 +842,7 @@ export default function DashboardShell({
     { key: "trends", label: "Trends" },
     { key: "compare", label: "Compare Players" },
     { key: "dayOfWeek", label: "Day of week" },
+    { key: "injury", label: "Injury" },
     { key: "goals", label: "Goals & Benchmarks" }
   ];
 
@@ -805,6 +888,7 @@ export default function DashboardShell({
         onClearDays={() => setSelectedDays([])}
         onApplyDatePreset={handleApplyDatePreset}
         onCsvUpload={handleCsvUpload}
+        onPlayerContextMenu={handlePlayerContextMenu}
       />
 
       <main ref={printRef} className="print-panel mx-auto mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -964,7 +1048,10 @@ export default function DashboardShell({
             </div>
 
             <section id="coach-review-queue">
-              <ReviewPanel rows={flaggedPlayers} />
+              <ReviewPanel
+                rows={flaggedPlayers}
+                onPlayerContextMenu={handlePlayerContextMenu}
+              />
             </section>
 
             <div className="grid gap-6 xl:grid-cols-[2fr_0.9fr]">
@@ -973,6 +1060,7 @@ export default function DashboardShell({
                 sortKey={sortKey}
                 sortDirection={sortDirection}
                 onSortChange={handleSortChange}
+                onPlayerContextMenu={handlePlayerContextMenu}
               />
 
               <div className="space-y-6">
@@ -1109,6 +1197,7 @@ export default function DashboardShell({
               onSelectionChange={setComparePlayers}
               data={filteredData}
               teamAverage={teamAverage}
+              onPlayerContextMenu={handlePlayerContextMenu}
             />
           </section>
         ) : null}
@@ -1133,6 +1222,17 @@ export default function DashboardShell({
           </section>
         ) : null}
 
+        {activeTab === "injury" ? (
+          <section className="mt-6">
+            <InjuryView
+              players={profilePlayers}
+              data={data}
+              injuries={playerInjuries}
+              teamAverage={teamAverage}
+            />
+          </section>
+        ) : null}
+
         {activeTab === "goals" ? (
           <section className="mt-6">
             <GoalsView
@@ -1144,6 +1244,7 @@ export default function DashboardShell({
               onExportCsv={handleExportCsv}
               teamAverage={teamAverage}
               teamAverageChangePct={displayedChangePct}
+              onPlayerContextMenu={handlePlayerContextMenu}
             />
           </section>
         ) : null}
@@ -1155,6 +1256,46 @@ export default function DashboardShell({
         onClose={() => setIsAlertsOpen(false)}
         onViewTrends={handleViewAlertTrends}
         onAddNote={handleAddAlertNote}
+      />
+
+      {contextMenu ? (
+        <div className="fixed inset-0 z-[65]">
+          <button
+            type="button"
+            aria-label="Close player menu"
+            className="absolute inset-0 cursor-default"
+            onClick={() => setContextMenu(null)}
+          />
+          <div
+            className="absolute min-w-[220px] rounded-2xl border border-slate-200 bg-white p-2 shadow-soft"
+            style={{
+              left:
+                typeof window === "undefined"
+                  ? contextMenu.x
+                  : Math.min(contextMenu.x, window.innerWidth - 244),
+              top:
+                typeof window === "undefined"
+                  ? contextMenu.y
+                  : Math.min(contextMenu.y, window.innerHeight - 92)
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => handleOpenInjuryModal(contextMenu.player)}
+              className="min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Mark as Injured
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <InjuryModal
+        open={Boolean(injuryModalPlayer)}
+        player={injuryModalPlayer ?? ""}
+        initialInjury={injuryModalPlayer ? playerInjuries[injuryModalPlayer] : undefined}
+        onClose={() => setInjuryModalPlayer(null)}
+        onSave={handleSavePlayerInjury}
       />
     </div>
   );

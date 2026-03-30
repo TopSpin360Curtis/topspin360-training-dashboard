@@ -1,5 +1,8 @@
 "use client";
 
+import type { MouseEvent } from "react";
+import { useMemo, useState } from "react";
+
 import ExportButton from "@/components/ExportButton";
 import RiskBandBadge from "@/components/RiskBandBadge";
 import TeamAverageComparator from "@/components/TeamAverageComparator";
@@ -10,7 +13,7 @@ import {
   getPlayerStats,
   getTeamBenchmarkProgress
 } from "@/lib/dataUtils";
-import type { BenchmarkConfig, TrainingSession } from "@/lib/types";
+import type { BenchmarkConfig, RiskBand, TrainingSession } from "@/lib/types";
 
 type GoalsViewProps = {
   data: TrainingSession[];
@@ -21,6 +24,7 @@ type GoalsViewProps = {
   onExportCsv: () => void;
   teamAverage: number;
   teamAverageChangePct: number;
+  onPlayerContextMenu?: (player: string, event: MouseEvent<HTMLElement>) => void;
 };
 
 function ProgressRow({
@@ -62,9 +66,26 @@ export default function GoalsView({
   onExportPdf,
   onExportCsv,
   teamAverage,
-  teamAverageChangePct
+  teamAverageChangePct,
+  onPlayerContextMenu
 }: GoalsViewProps) {
+  const [activeRiskBand, setActiveRiskBand] = useState<RiskBand | null>(null);
   const teamProgress = getTeamBenchmarkProgress(data, config);
+  const playerGoalStats = useMemo(
+    () =>
+      players.map((player) => ({
+        player,
+        stats: getPlayerStats(data, player)
+      })),
+    [data, players]
+  );
+  const filteredPlayerGoalStats = useMemo(
+    () =>
+      activeRiskBand
+        ? playerGoalStats.filter(({ stats }) => stats.riskBand === activeRiskBand)
+        : playerGoalStats,
+    [activeRiskBand, playerGoalStats]
+  );
 
   return (
     <div className="space-y-6">
@@ -85,18 +106,43 @@ export default function GoalsView({
         </article>
 
         <article className="rounded-3xl border border-white/60 bg-white/95 p-5 shadow-soft xl:col-span-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
-            Risk Band Distribution
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
+              Risk Band Distribution
+            </p>
+            {activeRiskBand ? (
+              <button
+                type="button"
+                onClick={() => setActiveRiskBand(null)}
+                className="text-sm font-semibold text-brand-blue transition hover:text-brand-ink"
+              >
+                Clear filter
+              </button>
+            ) : null}
+          </div>
           <div className="mt-4 grid gap-4 md:grid-cols-4">
             {teamProgress.bandCounts.map((band) => (
-              <div key={band.band} className="rounded-2xl bg-slate-50/80 p-4">
+              <button
+                key={band.band}
+                type="button"
+                onClick={() =>
+                  setActiveRiskBand((currentBand) =>
+                    currentBand === band.band ? null : band.band
+                  )
+                }
+                aria-pressed={activeRiskBand === band.band}
+                className={`rounded-2xl border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-brand-blue/20 ${
+                  activeRiskBand === band.band
+                    ? "border-brand-blue bg-brand-blue/5 shadow-soft ring-1 ring-brand-blue/30"
+                    : "border-slate-100 bg-slate-50/80 hover:border-brand-blue/30 hover:bg-white"
+                }`}
+              >
                 <RiskBandBadge band={band.band} />
                 <p className="mt-3 text-2xl font-semibold text-brand-ink">{band.count}</p>
                 <p className="text-sm text-slate-500">
                   {Math.round(band.percentage)}% of active players
                 </p>
-              </div>
+              </button>
             ))}
           </div>
         </article>
@@ -172,15 +218,30 @@ export default function GoalsView({
         </article>
 
         <article className="rounded-3xl border border-white/60 bg-white/95 p-5 shadow-soft">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
-            Individual Goals
-          </p>
-          <h3 className="mt-2 text-xl font-semibold text-brand-ink">
-            Player target tracking
-          </h3>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
+                Individual Goals
+              </p>
+              <h3 className="mt-2 text-xl font-semibold text-brand-ink">
+                Player target tracking
+              </h3>
+            </div>
+            {activeRiskBand ? (
+              <div className="text-right">
+                <RiskBandBadge band={activeRiskBand} compact />
+                <p className="mt-2 text-sm text-slate-500">
+                  Showing {filteredPlayerGoalStats.length} of {playerGoalStats.length} players
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">
+                Showing all {playerGoalStats.length} players
+              </p>
+            )}
+          </div>
           <div className="mt-5 grid gap-4">
-            {players.map((player) => {
-              const stats = getPlayerStats(data, player);
+            {filteredPlayerGoalStats.map(({ player, stats }) => {
               const target = config.playerTargets[player];
               const rfdProgress = target ? (stats.bestRFD / target.rfdTarget) * 100 : 0;
               const sessionProgress = target
@@ -195,7 +256,12 @@ export default function GoalsView({
                   <div className="grid gap-4 lg:grid-cols-[1fr_0.8fr_0.8fr] lg:items-start">
                     <div>
                       <div className="flex items-center justify-between gap-3">
-                        <p className="font-semibold text-brand-ink">{player}</p>
+                        <p
+                          className="font-semibold text-brand-ink"
+                          onContextMenu={(event) => onPlayerContextMenu?.(player, event)}
+                        >
+                          {player}
+                        </p>
                         <RiskBandBadge band={stats.riskBand} compact />
                       </div>
                       <p className="mt-1 text-sm text-slate-500">
@@ -263,6 +329,11 @@ export default function GoalsView({
                 </div>
               );
             })}
+            {!filteredPlayerGoalStats.length ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center text-sm text-slate-500">
+                No players are currently in this risk band for the active cohort.
+              </div>
+            ) : null}
           </div>
         </article>
       </div>

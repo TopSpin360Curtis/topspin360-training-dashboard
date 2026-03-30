@@ -1,5 +1,6 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import { formatNumber } from "@/lib/dataUtils";
 import AsymmetryIndicator from "@/components/AsymmetryIndicator";
 import RiskBandBadge from "@/components/RiskBandBadge";
@@ -21,6 +22,10 @@ type LeaderboardProps = {
   sortKey: SortKey;
   sortDirection: "asc" | "desc";
   onSortChange: (key: SortKey) => void;
+  onPlayerContextMenu?: (
+    player: string,
+    event: MouseEvent<HTMLElement>
+  ) => void;
 };
 
 function getRowTone(index: number, total: number) {
@@ -55,7 +60,8 @@ export default function Leaderboard({
   rows,
   sortKey,
   sortDirection,
-  onSortChange
+  onSortChange,
+  onPlayerContextMenu
 }: LeaderboardProps) {
   const headings: Array<{
     label: string;
@@ -108,7 +114,12 @@ export default function Leaderboard({
             >
               <td className="px-4 py-4 font-semibold text-brand-ink">{row.rank}</td>
               <td className="px-4 py-4">
-                <p className="font-medium text-brand-ink">{row.player}</p>
+                <p
+                  className="font-medium text-brand-ink"
+                  onContextMenu={(event) => onPlayerContextMenu?.(row.player, event)}
+                >
+                  {row.player}
+                </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <RiskBandBadge band={row.riskBand} />
                   <TrendStatusChip status={row.trendStatus} />

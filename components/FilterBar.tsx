@@ -1,5 +1,6 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import { useMemo, useState } from "react";
 import CollapsibleFilterBar from "@/components/CollapsibleFilterBar";
 
@@ -21,6 +22,7 @@ type FilterBarProps = {
   onClearDays: () => void;
   onApplyDatePreset: (preset: "last7" | "last30" | "season") => void;
   onCsvUpload: (file: File) => void;
+  onPlayerContextMenu?: (player: string, event: MouseEvent<HTMLElement>) => void;
 };
 
 export default function FilterBar({
@@ -40,7 +42,8 @@ export default function FilterBar({
   onDayToggle,
   onClearDays,
   onApplyDatePreset,
-  onCsvUpload
+  onCsvUpload,
+  onPlayerContextMenu
 }: FilterBarProps) {
   const [playerSearch, setPlayerSearch] = useState("");
   const filteredPlayers = useMemo(() => {
@@ -101,6 +104,7 @@ export default function FilterBar({
                       <button
                         key={player}
                         type="button"
+                        onContextMenu={(event) => onPlayerContextMenu?.(player, event)}
                         onClick={() =>
                           onPlayersChange(
                             isSelected

@@ -1,5 +1,6 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import { useMemo, useState } from "react";
 import {
   Bar,
@@ -25,6 +26,7 @@ type CompareViewProps = {
   onSelectionChange: (players: string[]) => void;
   data: TrainingSession[];
   teamAverage: number;
+  onPlayerContextMenu?: (player: string, event: MouseEvent<HTMLElement>) => void;
 };
 
 export default function CompareView({
@@ -32,7 +34,8 @@ export default function CompareView({
   selectedPlayers,
   onSelectionChange,
   data,
-  teamAverage
+  teamAverage,
+  onPlayerContextMenu
 }: CompareViewProps) {
   const [playerFilter, setPlayerFilter] = useState("");
   const filteredPlayers = useMemo(() => {
@@ -95,6 +98,7 @@ export default function CompareView({
                     return (
                       <label
                         key={player}
+                        onContextMenu={(event) => onPlayerContextMenu?.(player, event)}
                         className={`flex min-h-[28px] cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-[12px] transition ${
                           isDisabled
                             ? "cursor-not-allowed text-slate-400"
@@ -182,7 +186,10 @@ export default function CompareView({
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
+                <p
+                  className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70"
+                  onContextMenu={(event) => onPlayerContextMenu?.(stat.player, event)}
+                >
                   {stat.player}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
