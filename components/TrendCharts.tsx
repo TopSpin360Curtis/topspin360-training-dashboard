@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -33,6 +34,15 @@ type TrendChartsProps = {
   teamAverage: number;
   dateRangeLabel: string;
 };
+
+type SessionSortKey =
+  | "date"
+  | "dayOfWeek"
+  | "maxRfdCCW"
+  | "maxRfdCW"
+  | "bestRfd"
+  | "riskBand"
+  | "delta";
 
 function Gauge({
   label,
@@ -81,8 +91,61 @@ export default function TrendCharts({
   teamAverage,
   dateRangeLabel
 }: TrendChartsProps) {
+  const [sessionSortKey, setSessionSortKey] = useState<SessionSortKey>("date");
+  const [sessionSortDirection, setSessionSortDirection] = useState<"asc" | "desc">("desc");
   const metrics = getRecentBestMetrics(sessions, player);
   const lowerRiskThreshold = 33;
+  const riskBandOrder: Record<RiskBand, number> = {
+    high: 0,
+    moderate: 1,
+    lower: 2,
+    lowest: 3
+  };
+  const sortedSessionHistory = useMemo(() => {
+    const ordered = [...sessions];
+
+    ordered.sort((left, right) => {
+      let comparison = 0;
+
+      switch (sessionSortKey) {
+        case "date":
+          comparison = left.date.localeCompare(right.date);
+          break;
+        case "dayOfWeek":
+          comparison = left.dayOfWeek.localeCompare(right.dayOfWeek);
+          break;
+        case "maxRfdCCW":
+          comparison = left.maxRfdCCW - right.maxRfdCCW;
+          break;
+        case "maxRfdCW":
+          comparison = left.maxRfdCW - right.maxRfdCW;
+          break;
+        case "bestRfd":
+          comparison = left.bestRfd - right.bestRfd;
+          break;
+        case "riskBand":
+          comparison = riskBandOrder[left.riskBand] - riskBandOrder[right.riskBand];
+          break;
+        case "delta":
+          comparison = left.delta - right.delta;
+          break;
+      }
+
+      return sessionSortDirection === "asc" ? comparison : -comparison;
+    });
+
+    return ordered;
+  }, [sessions, sessionSortDirection, sessionSortKey]);
+
+  function handleSessionSort(nextKey: SessionSortKey) {
+    if (sessionSortKey === nextKey) {
+      setSessionSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setSessionSortKey(nextKey);
+    setSessionSortDirection(nextKey === "date" ? "desc" : "asc");
+  }
 
   return (
     <div className="space-y-6">
@@ -267,22 +330,33 @@ export default function TrendCharts({
           <thead className="bg-slate-50/80">
             <tr>
               {[
-                "Date",
-                "Day of week",
-                "Max RFD CCW",
-                "Max RFD CW",
-                "Best RFD",
-                "Risk Band",
-                "Delta"
-              ].map((label) => (
-                <th key={label} className="px-4 py-4 font-semibold text-slate-700">
-                  {label}
+                { label: "Date", key: "date" },
+                { label: "Day of week", key: "dayOfWeek" },
+                { label: "Max RFD CCW", key: "maxRfdCCW" },
+                { label: "Max RFD CW", key: "maxRfdCW" },
+                { label: "Best RFD", key: "bestRfd" },
+                { label: "Risk Band", key: "riskBand" },
+                { label: "Delta", key: "delta" }
+              ].map((column) => (
+                <th key={column.key} className="px-4 py-4 font-semibold text-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => handleSessionSort(column.key as SessionSortKey)}
+                    className="flex items-center gap-2 transition hover:text-brand-blue"
+                  >
+                    {column.label}
+                    {sessionSortKey === column.key ? (
+                      <span className="text-xs text-brand-blue">
+                        {sessionSortDirection === "asc" ? "↑" : "↓"}
+                      </span>
+                    ) : null}
+                  </button>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {[...sessions].reverse().map((session) => (
+            {sortedSessionHistory.map((session) => (
               <tr key={session.id} className="border-t border-slate-100">
                 <td className="px-4 py-4 text-slate-700">{formatDate(session.date)}</td>
                 <td className="px-4 py-4 text-slate-700">{session.dayOfWeek}</td>
