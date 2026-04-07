@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "googleapis": "148.0.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
