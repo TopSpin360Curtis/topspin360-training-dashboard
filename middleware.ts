@@ -3,19 +3,19 @@ import { NextResponse } from "next/server";
 import {
   AUTH_COOKIE_NAME,
   AUTH_MODE_COOKIE_NAME,
+  AUTH_TENANT_COOKIE_NAME,
   DEFAULT_AUTH_MODE,
-  getDashboardModeFromCookieValue,
-  getExpectedPasswordHash,
-  getLoginPathForMode
+  getTenantById,
+  getLoginPathForMode,
+  isAuthenticationEnabled,
+  validateAuthCookies
 } from "@/lib/auth";
 
 const PUBLIC_PATH_PREFIXES = ["/_next", "/login"];
 const PUBLIC_EXACT_PATHS = ["/favicon.ico", "/api/auth/login", "/api/auth/logout"];
 
 export async function middleware(request: NextRequest) {
-  const expectedHash = await getExpectedPasswordHash();
-
-  if (!expectedHash) {
+  if (!isAuthenticationEnabled()) {
     return NextResponse.next();
   }
 
@@ -29,11 +29,15 @@ export async function middleware(request: NextRequest) {
   }
 
   const authCookie = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  const modeCookie = getDashboardModeFromCookieValue(
-    request.cookies.get(AUTH_MODE_COOKIE_NAME)?.value
-  );
+  const tenantCookie = request.cookies.get(AUTH_TENANT_COOKIE_NAME)?.value;
+  const modeCookie = request.cookies.get(AUTH_MODE_COOKIE_NAME)?.value;
+  const authenticatedTenant = await validateAuthCookies({
+    tenantId: tenantCookie,
+    authToken: authCookie,
+    mode: modeCookie
+  });
 
-  if (authCookie === expectedHash && modeCookie) {
+  if (authenticatedTenant) {
     return NextResponse.next();
   }
 
@@ -47,7 +51,9 @@ export async function middleware(request: NextRequest) {
   }
 
   const loginUrl = request.nextUrl.clone();
-  loginUrl.pathname = getLoginPathForMode(modeCookie ?? DEFAULT_AUTH_MODE);
+  loginUrl.pathname = getLoginPathForMode(
+    getTenantById(tenantCookie)?.profile ?? DEFAULT_AUTH_MODE
+  );
   loginUrl.searchParams.set("next", `${pathname}${search}`);
 
   return NextResponse.redirect(loginUrl);

@@ -11,8 +11,8 @@ export default function LoginLandingPage() {
           Choose a protected dashboard environment
         </h1>
         <p className="mt-4 text-sm leading-6 text-slate-600">
-          Team and Test data now use separate login paths so users stay in the correct
-          environment after sign-in.
+          Team and Test data use separate login routes, and each username is bound to one
+          dataset only after sign-in.
         </p>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">

@@ -65,6 +65,7 @@ import type {
   CoachNote,
   DataSourceMeta,
   DashboardProfile,
+  DashboardTenant,
   PlayerInjury,
   PlayerInjuryMap,
   PlayerAlert,
@@ -97,16 +98,16 @@ const PROFILE_LABELS: Record<DashboardProfile, string> = {
   test: "Test"
 };
 
-function getBenchmarkStorageKey(profile: DashboardProfile) {
-  return `${BENCHMARK_STORAGE_KEY}-${profile}`;
+function getBenchmarkStorageKey(namespace: string) {
+  return `${BENCHMARK_STORAGE_KEY}-${namespace}`;
 }
 
-function getDataStorageKey(profile: DashboardProfile) {
-  return `${DASHBOARD_DATA_STORAGE_KEY}-${profile}`;
+function getDataStorageKey(namespace: string) {
+  return `${DASHBOARD_DATA_STORAGE_KEY}-${namespace}`;
 }
 
-function getSourceStorageKey(profile: DashboardProfile) {
-  return `${DASHBOARD_SOURCE_STORAGE_KEY}-${profile}`;
+function getSourceStorageKey(namespace: string) {
+  return `${DASHBOARD_SOURCE_STORAGE_KEY}-${namespace}`;
 }
 
 function getDefaultSourceMeta(profile: DashboardProfile): DataSourceMeta {
@@ -268,18 +269,18 @@ function ReviewPanel({
 
 export default function DashboardShell({
   passwordProtectionEnabled = false,
-  authenticatedProfile = null
+  authenticatedTenant = null
 }: {
   passwordProtectionEnabled?: boolean;
-  authenticatedProfile?: DashboardProfile | null;
+  authenticatedTenant?: DashboardTenant | null;
 }) {
-  const modeLocked = Boolean(passwordProtectionEnabled && authenticatedProfile);
+  const modeLocked = Boolean(passwordProtectionEnabled && authenticatedTenant);
   const [activeProfile, setActiveProfile] = useState<DashboardProfile>(
-    authenticatedProfile ?? "team"
+    authenticatedTenant?.profile ?? "team"
   );
   const [data, setData] = useState<TrainingSession[]>(sampleTrainingData);
   const [sourceMeta, setSourceMeta] = useState<DataSourceMeta>(
-    getDefaultSourceMeta(authenticatedProfile ?? "team")
+    getDefaultSourceMeta(authenticatedTenant?.profile ?? "team")
   );
   const [viewMode, setViewMode] = useState<"individual" | "team">("team");
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
@@ -322,12 +323,14 @@ export default function DashboardShell({
   const injuryExportRef = useRef<HTMLElement | null>(null);
   const goalsExportRef = useRef<HTMLElement | null>(null);
   const [profileReady, setProfileReady] = useState(false);
+  const storageNamespace = authenticatedTenant ? `tenant-${authenticatedTenant.id}` : activeProfile;
+  const activeDatasetLabel = authenticatedTenant?.label ?? PROFILE_LABELS[activeProfile];
 
   useEffect(() => {
-    if (modeLocked && authenticatedProfile && activeProfile !== authenticatedProfile) {
-      setActiveProfile(authenticatedProfile);
+    if (modeLocked && authenticatedTenant && activeProfile !== authenticatedTenant.profile) {
+      setActiveProfile(authenticatedTenant.profile);
     }
-  }, [activeProfile, authenticatedProfile, modeLocked]);
+  }, [activeProfile, authenticatedTenant, modeLocked]);
 
   const dateBounds = useMemo(() => getDateBounds(data), [data]);
   const filteredByDate = useMemo(
@@ -442,8 +445,8 @@ export default function DashboardShell({
   const dayOfWeekInsights = getDayOfWeekInsights(dayOfWeekStats);
 
   useEffect(() => {
-    setCoachNotes(loadCoachNotes());
-  }, []);
+    setCoachNotes(loadCoachNotes(storageNamespace));
+  }, [storageNamespace]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -451,8 +454,8 @@ export default function DashboardShell({
     }
 
     setProfileReady(false);
-    const storedData = window.localStorage.getItem(getDataStorageKey(activeProfile));
-    const storedSource = window.localStorage.getItem(getSourceStorageKey(activeProfile));
+    const storedData = window.localStorage.getItem(getDataStorageKey(storageNamespace));
+    const storedSource = window.localStorage.getItem(getSourceStorageKey(storageNamespace));
     let nextData = sampleTrainingData;
     let nextSource = getDefaultSourceMeta(activeProfile);
 
@@ -464,7 +467,7 @@ export default function DashboardShell({
           nextData = parsed;
         }
       } catch {
-        window.localStorage.removeItem(getDataStorageKey(activeProfile));
+        window.localStorage.removeItem(getDataStorageKey(storageNamespace));
       }
     }
 
@@ -477,7 +480,7 @@ export default function DashboardShell({
           profile: activeProfile
         };
       } catch {
-        window.localStorage.removeItem(getSourceStorageKey(activeProfile));
+        window.localStorage.removeItem(getSourceStorageKey(storageNamespace));
       }
     }
 
@@ -494,9 +497,9 @@ export default function DashboardShell({
     setTrendPlayerSearch("");
     setComparePlayers(nextPlayers.slice(0, 3));
     setSelectedDayPlayer(nextPlayers[0] ?? "");
-    setPlayerInjuries(loadPlayerInjuries(activeProfile));
+    setPlayerInjuries(loadPlayerInjuries(activeProfile, storageNamespace));
     setProfileReady(true);
-  }, [activeProfile]);
+  }, [activeProfile, storageNamespace]);
 
   function handleProfileChange(nextProfile: DashboardProfile) {
     if (modeLocked) {
@@ -557,7 +560,7 @@ export default function DashboardShell({
       return;
     }
 
-    const stored = window.localStorage.getItem(getBenchmarkStorageKey(activeProfile));
+    const stored = window.localStorage.getItem(getBenchmarkStorageKey(storageNamespace));
     const defaults = buildDefaultBenchmarkConfig(data);
 
     if (stored) {
@@ -573,12 +576,12 @@ export default function DashboardShell({
         });
         return;
       } catch {
-        window.localStorage.removeItem(getBenchmarkStorageKey(activeProfile));
+        window.localStorage.removeItem(getBenchmarkStorageKey(storageNamespace));
       }
     }
 
     setBenchmarkConfig(defaults);
-  }, [activeProfile, data]);
+  }, [data, storageNamespace]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !profileReady) {
@@ -586,34 +589,34 @@ export default function DashboardShell({
     }
 
     window.localStorage.setItem(
-      getBenchmarkStorageKey(activeProfile),
+      getBenchmarkStorageKey(storageNamespace),
       JSON.stringify(benchmarkConfig)
     );
-  }, [activeProfile, benchmarkConfig, profileReady]);
+  }, [benchmarkConfig, profileReady, storageNamespace]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !profileReady) {
       return;
     }
 
-    window.localStorage.setItem(getDataStorageKey(activeProfile), JSON.stringify(data));
+    window.localStorage.setItem(getDataStorageKey(storageNamespace), JSON.stringify(data));
     window.localStorage.setItem(
-      getSourceStorageKey(activeProfile),
+      getSourceStorageKey(storageNamespace),
       JSON.stringify(sourceMeta)
     );
-  }, [activeProfile, data, profileReady, sourceMeta]);
+  }, [data, profileReady, sourceMeta, storageNamespace]);
 
   useEffect(() => {
-    saveCoachNotes(coachNotes);
-  }, [coachNotes]);
+    saveCoachNotes(coachNotes, storageNamespace);
+  }, [coachNotes, storageNamespace]);
 
   useEffect(() => {
     if (!profileReady) {
       return;
     }
 
-    savePlayerInjuries(activeProfile, playerInjuries);
-  }, [activeProfile, playerInjuries, profileReady]);
+    savePlayerInjuries(activeProfile, playerInjuries, storageNamespace);
+  }, [activeProfile, playerInjuries, profileReady, storageNamespace]);
 
   useEffect(() => {
     setAlerts(getHighPriorityAlerts(selectedPlayers.length ? filteredData : cohortData, teamScopeData));
@@ -687,7 +690,7 @@ export default function DashboardShell({
           setSourceMeta({
             source: "csv",
             profile: activeProfile,
-            message: `Loaded ${cleaned.length} valid rows from ${file.name}. Non-name labels and invalid player IDs were excluded.`
+            message: `Loaded ${cleaned.length} valid rows into ${activeDatasetLabel} from ${file.name}. Non-name labels and invalid player IDs were excluded.`
           });
         }
       }
@@ -737,7 +740,7 @@ export default function DashboardShell({
           profile: payload.profile ?? activeProfile,
           message:
             payload.message ??
-            `Synced ${PROFILE_LABELS[activeProfile]} Google Sheets manually. Only full-name players are included.`
+            `Synced ${activeDatasetLabel} Google Sheets manually. Only full-name players are included.`
         });
       } else {
         setSourceMeta({
@@ -821,7 +824,7 @@ export default function DashboardShell({
     try {
       await exportElementToPdf({
         element: target,
-        fileName: `topspin360-${activeProfile}-${activeTab}.pdf`
+        fileName: `topspin360-${authenticatedTenant?.id ?? activeProfile}-${activeTab}.pdf`
       });
     } finally {
       setIsExportingPdf(false);
@@ -913,6 +916,7 @@ export default function DashboardShell({
         viewMode={viewMode}
         onViewChange={handleViewChange}
         dataProfile={activeProfile}
+        tenantLabel={activeDatasetLabel}
         onProfileChange={handleProfileChange}
         modeLocked={modeLocked}
         onExportCsv={handleExportCsv}
@@ -954,10 +958,10 @@ export default function DashboardShell({
               </p>
               <h2 className="mt-1 text-2xl font-semibold">
                 {sourceMeta.source === "sheets"
-                  ? `${PROFILE_LABELS[activeProfile]} profile connected`
+                  ? `${activeDatasetLabel} connected`
                   : sourceMeta.source === "csv"
-                    ? `${PROFILE_LABELS[activeProfile]} CSV loaded`
-                    : `${PROFILE_LABELS[activeProfile]} sample data`}
+                    ? `${activeDatasetLabel} CSV loaded`
+                    : `${activeDatasetLabel} sample data`}
               </h2>
             </div>
             <p className="max-w-2xl text-sm text-white/85">

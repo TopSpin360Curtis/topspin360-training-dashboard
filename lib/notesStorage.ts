@@ -2,13 +2,17 @@ import type { CoachNote } from "@/lib/types";
 
 const NOTES_STORAGE_KEY = "topspin360-coach-notes";
 
-export function loadCoachNotes() {
+function getNotesStorageKey(namespace = "default") {
+  return `${NOTES_STORAGE_KEY}-${namespace}`;
+}
+
+export function loadCoachNotes(namespace = "default") {
   if (typeof window === "undefined") {
     return [] as CoachNote[];
   }
 
   try {
-    const stored = window.localStorage.getItem(NOTES_STORAGE_KEY);
+    const stored = window.localStorage.getItem(getNotesStorageKey(namespace));
 
     if (!stored) {
       return [];
@@ -21,10 +25,10 @@ export function loadCoachNotes() {
   }
 }
 
-export function saveCoachNotes(notes: CoachNote[]) {
+export function saveCoachNotes(notes: CoachNote[], namespace = "default") {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
+  window.localStorage.setItem(getNotesStorageKey(namespace), JSON.stringify(notes));
 }

@@ -8,6 +8,7 @@ type NavbarProps = {
   viewMode: "individual" | "team";
   onViewChange: (value: "individual" | "team") => void;
   dataProfile: DashboardProfile;
+  tenantLabel?: string;
   onProfileChange: (value: DashboardProfile) => void;
   modeLocked?: boolean;
   onExportCsv: () => void;
@@ -24,6 +25,7 @@ export default function Navbar({
   viewMode,
   onViewChange,
   dataProfile,
+  tenantLabel,
   onProfileChange,
   modeLocked = false,
   onExportCsv,
@@ -109,7 +111,7 @@ export default function Navbar({
               Active Mode
             </span>
             <span className="rounded-full bg-white/80 px-3 py-1 text-sm font-semibold">
-              {dataProfile === "team" ? "Team Data" : "Test Data"}
+              {tenantLabel ?? (dataProfile === "team" ? "Team Data" : "Test Data")}
             </span>
           </div>
         ) : (
@@ -217,7 +219,7 @@ export default function Navbar({
                       Active Mode
                     </p>
                     <p className="mt-1 font-semibold text-brand-ink">
-                      {dataProfile === "team" ? "Team Data" : "Test Data"}
+                      {tenantLabel ?? (dataProfile === "team" ? "Team Data" : "Test Data")}
                     </p>
                   </div>
                 ) : (

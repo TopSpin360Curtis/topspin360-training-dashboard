@@ -182,7 +182,11 @@ function mergeInjuryMaps(base: PlayerInjuryMap, custom: PlayerInjuryMap) {
   return merged;
 }
 
-function getDefaultPlayerInjuries(profile: DashboardProfile): PlayerInjuryMap {
+function getDefaultPlayerInjuries(profile: DashboardProfile, namespace?: string): PlayerInjuryMap {
+  if (namespace && namespace !== "tenant-team" && namespace !== "tenant-test") {
+    return {};
+  }
+
   if (profile === "team") {
     return TEAM_DEFAULT_INJURIES;
   }
@@ -194,14 +198,19 @@ export function getInjuryStorageKey(profile: DashboardProfile) {
   return `${INJURY_STORAGE_KEY}-${profile}`;
 }
 
-export function loadPlayerInjuries(profile: DashboardProfile): PlayerInjuryMap {
-  const defaults = getDefaultPlayerInjuries(profile);
+function getInjuryStorageNamespace(profile: DashboardProfile, namespace?: string) {
+  return namespace ? `${INJURY_STORAGE_KEY}-${namespace}` : getInjuryStorageKey(profile);
+}
+
+export function loadPlayerInjuries(profile: DashboardProfile, namespace?: string): PlayerInjuryMap {
+  const defaults = getDefaultPlayerInjuries(profile, namespace);
 
   if (typeof window === "undefined") {
     return defaults;
   }
 
-  const stored = window.localStorage.getItem(getInjuryStorageKey(profile));
+  const storageKey = getInjuryStorageNamespace(profile, namespace);
+  const stored = window.localStorage.getItem(storageKey);
 
   if (!stored) {
     return defaults;
@@ -212,15 +221,22 @@ export function loadPlayerInjuries(profile: DashboardProfile): PlayerInjuryMap {
     const normalized = normalizeStoredInjuryMap(parsed);
     return mergeInjuryMaps(defaults, normalized);
   } catch {
-    window.localStorage.removeItem(getInjuryStorageKey(profile));
+    window.localStorage.removeItem(storageKey);
     return defaults;
   }
 }
 
-export function savePlayerInjuries(profile: DashboardProfile, injuries: PlayerInjuryMap) {
+export function savePlayerInjuries(
+  profile: DashboardProfile,
+  injuries: PlayerInjuryMap,
+  namespace?: string
+) {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.localStorage.setItem(getInjuryStorageKey(profile), JSON.stringify(injuries));
+  window.localStorage.setItem(
+    getInjuryStorageNamespace(profile, namespace),
+    JSON.stringify(injuries)
+  );
 }

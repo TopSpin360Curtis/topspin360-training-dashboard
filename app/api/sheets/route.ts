@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  AUTH_COOKIE_NAME,
   AUTH_MODE_COOKIE_NAME,
-  getDashboardModeFromCookieValue,
-  isPasswordProtectionEnabled
+  AUTH_TENANT_COOKIE_NAME,
+  getTenantConfigById,
+  validateAuthCookies
 } from "@/lib/auth";
 import {
   fetchGoogleSheetData,
@@ -16,39 +18,37 @@ export const runtime = "nodejs";
 
 const DEFAULT_TEST_SHEET_ID = "1ZWQgwzg1trwPisVNDphVTBMw1g4Ey5ml8RQIVXt3jnQ";
 
-function getProfileConfig(profile: DashboardProfile) {
-  if (profile === "test") {
-    return {
-      sheetId: process.env.TEST_GOOGLE_SHEET_ID?.trim() || DEFAULT_TEST_SHEET_ID,
-      range: process.env.TEST_GOOGLE_SHEET_RANGE?.trim() || undefined,
-      publicSheetId: process.env.NEXT_PUBLIC_TEST_SHEET_ID?.trim(),
-      apiKey: process.env.TEST_GOOGLE_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim()
-    };
-  }
-
-  return {
-    sheetId: process.env.GOOGLE_SHEET_ID?.trim(),
-    range: process.env.GOOGLE_SHEET_RANGE?.trim(),
-    publicSheetId: process.env.NEXT_PUBLIC_SHEET_ID?.trim(),
-    apiKey: process.env.GOOGLE_API_KEY?.trim()
-  };
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const requestedProfile = request.nextUrl.searchParams.get("profile");
-    const sessionProfile = getDashboardModeFromCookieValue(
-      request.cookies.get(AUTH_MODE_COOKIE_NAME)?.value
-    );
-    const profile: DashboardProfile =
-      isPasswordProtectionEnabled() && sessionProfile
-        ? sessionProfile
-        : requestedProfile === "test"
-          ? "test"
-          : "team";
-    const { sheetId, range, publicSheetId, apiKey } = getProfileConfig(profile);
+    const authenticatedTenant = await validateAuthCookies({
+      tenantId: request.cookies.get(AUTH_TENANT_COOKIE_NAME)?.value,
+      authToken: request.cookies.get(AUTH_COOKIE_NAME)?.value,
+      mode: request.cookies.get(AUTH_MODE_COOKIE_NAME)?.value
+    });
+    const tenantConfig = getTenantConfigById(authenticatedTenant?.id);
+    const profile: DashboardProfile = tenantConfig?.profile ?? "team";
+    const sheetId =
+      tenantConfig?.sheetId ??
+      (profile === "test"
+        ? process.env.TEST_GOOGLE_SHEET_ID?.trim() || DEFAULT_TEST_SHEET_ID
+        : process.env.GOOGLE_SHEET_ID?.trim());
+    const range =
+      tenantConfig?.range ??
+      (profile === "test"
+        ? process.env.TEST_GOOGLE_SHEET_RANGE?.trim() || undefined
+        : process.env.GOOGLE_SHEET_RANGE?.trim());
+    const publicSheetId =
+      tenantConfig?.publicSheetId ??
+      (profile === "test"
+        ? process.env.NEXT_PUBLIC_TEST_SHEET_ID?.trim()
+        : process.env.NEXT_PUBLIC_SHEET_ID?.trim());
+    const apiKey =
+      tenantConfig?.apiKey ??
+      (profile === "test"
+        ? process.env.TEST_GOOGLE_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim()
+        : process.env.GOOGLE_API_KEY?.trim());
     const serviceAccount = getServiceAccountCredentialsFromEnv();
-    const profileLabel = profile === "test" ? "test" : "team";
+    const profileLabel = tenantConfig?.label ?? (profile === "test" ? "test" : "team");
 
     if (sheetId && serviceAccount) {
       const result = await fetchPrivateGoogleSheetData(
@@ -89,23 +89,15 @@ export async function GET(request: NextRequest) {
       profile,
       source: "sample",
       message:
-        `Using bundled sample data for the ${profileLabel} profile. Add private Google Sheets service-account credentials, or use the public-sheet API key fallback.`
+        `Using bundled sample data for ${profileLabel}. Add private Google Sheets service-account credentials, or use the public-sheet API key fallback.`
     });
   } catch (error) {
     const message =
       error instanceof Error
         ? error.message
         : "Unable to load Google Sheets data.";
-    const requestedProfile = request.nextUrl.searchParams.get("profile");
-    const sessionProfile = getDashboardModeFromCookieValue(
-      request.cookies.get(AUTH_MODE_COOKIE_NAME)?.value
-    );
     const profile: DashboardProfile =
-      isPasswordProtectionEnabled() && sessionProfile
-        ? sessionProfile
-        : requestedProfile === "test"
-          ? "test"
-          : "team";
+      request.cookies.get(AUTH_MODE_COOKIE_NAME)?.value === "test" ? "test" : "team";
 
     return NextResponse.json(
       {

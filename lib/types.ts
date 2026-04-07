@@ -10,6 +10,13 @@ export type TrainingSession = {
 
 export type DashboardProfile = "team" | "test";
 
+export type DashboardTenant = {
+  id: string;
+  label: string;
+  username: string;
+  profile: DashboardProfile;
+};
+
 export type RiskBand = "high" | "moderate" | "lower" | "lowest";
 export type InjuryType = "head" | "neck";
 

@@ -21,7 +21,8 @@ const MODE_META: Record<
   team: {
     label: "Team Data",
     eyebrow: "Protected Team Access",
-    description: "Sign in to the live team environment and real athlete training data.",
+    description:
+      "Sign in with your team username and password. This route only admits accounts mapped to live team datasets.",
     accent: "bg-brand-blue text-white",
     alternateHref: "/login/test",
     alternateLabel: "Use Test Login"
@@ -29,7 +30,8 @@ const MODE_META: Record<
   test: {
     label: "Test Data",
     eyebrow: "Protected Test Access",
-    description: "Sign in to the demo environment and isolated test dataset.",
+    description:
+      "Sign in with your test username and password. This route only admits accounts mapped to demo datasets.",
     accent: "bg-brand-orange text-white",
     alternateHref: "/login/team",
     alternateLabel: "Use Team Login"

@@ -3,29 +3,33 @@ import type { DashboardProfile } from "@/lib/types";
 import {
   AUTH_COOKIE_NAME,
   AUTH_MODE_COOKIE_NAME,
-  getExpectedPasswordHash,
-  hashPassword,
+  AUTH_TENANT_COOKIE_NAME,
+  authenticateTenantLogin,
+  isAuthenticationEnabled,
   isDashboardMode
 } from "@/lib/auth";
 
 export async function POST(request: Request) {
-  const expectedHash = await getExpectedPasswordHash();
-
-  if (!expectedHash) {
+  if (!isAuthenticationEnabled()) {
     return NextResponse.json(
-      { error: "Password protection is not configured." },
+      { error: "Dashboard authentication is not configured." },
       { status: 400 }
     );
   }
 
   const payload = (await request.json().catch(() => null)) as
-    | { password?: string; mode?: DashboardProfile }
+    | { username?: string; password?: string; mode?: DashboardProfile }
     | null;
+  const submittedUsername = payload?.username?.trim() ?? "";
   const submittedPassword = payload?.password?.trim() ?? "";
   const submittedMode = payload?.mode;
 
+  if (!submittedUsername) {
+    return NextResponse.json({ error: "Enter your username." }, { status: 400 });
+  }
+
   if (!submittedPassword) {
-    return NextResponse.json({ error: "Enter the dashboard password." }, { status: 400 });
+    return NextResponse.json({ error: "Enter your password." }, { status: 400 });
   }
 
   if (!isDashboardMode(submittedMode)) {
@@ -35,16 +39,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const submittedHash = await hashPassword(submittedPassword);
+  const authenticated = await authenticateTenantLogin({
+    username: submittedUsername,
+    password: submittedPassword,
+    mode: submittedMode
+  });
 
-  if (submittedHash !== expectedHash) {
-    return NextResponse.json({ error: "That password is not correct." }, { status: 401 });
+  if (!authenticated) {
+    return NextResponse.json(
+      { error: "Those login details do not match this dashboard route." },
+      { status: 401 }
+    );
   }
 
   const response = NextResponse.json({ success: true });
   response.cookies.set({
     name: AUTH_COOKIE_NAME,
-    value: expectedHash,
+    value: authenticated.authToken,
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -53,7 +64,16 @@ export async function POST(request: Request) {
   });
   response.cookies.set({
     name: AUTH_MODE_COOKIE_NAME,
-    value: submittedMode,
+    value: authenticated.tenant.profile,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 12
+  });
+  response.cookies.set({
+    name: AUTH_TENANT_COOKIE_NAME,
+    value: authenticated.tenant.id,
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

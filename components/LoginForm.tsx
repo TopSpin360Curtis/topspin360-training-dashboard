@@ -12,6 +12,7 @@ export default function LoginForm({
   mode: DashboardProfile;
 }) {
   const router = useRouter();
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -25,7 +26,7 @@ export default function LoginForm({
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ password, mode })
+      body: JSON.stringify({ username, password, mode })
     });
 
     if (!response.ok) {
@@ -43,7 +44,20 @@ export default function LoginForm({
   return (
     <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
       <label className="block space-y-2">
-        <span className="text-sm font-medium text-slate-700">Dashboard password</span>
+        <span className="text-sm font-medium text-slate-700">Username</span>
+        <input
+          type="text"
+          value={username}
+          onChange={(event) => setUsername(event.target.value)}
+          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+          placeholder="Enter username"
+          autoComplete="username"
+          required
+        />
+      </label>
+
+      <label className="block space-y-2">
+        <span className="text-sm font-medium text-slate-700">Password</span>
         <input
           type="password"
           value={password}
