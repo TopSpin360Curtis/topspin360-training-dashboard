@@ -77,6 +77,43 @@ export default function PlayerQuickViewDrawer({
       : "CW"
     : null;
   const chartData = useMemo(() => trendSessions.slice(-8), [trendSessions]);
+  const sixtyDaySnapshot = useMemo(() => {
+    if (!trendSessions.length) {
+      return {
+        sessionCount: 0,
+        averageRfd: null as number | null,
+        peakRfd: null as number | null
+      };
+    }
+
+    const latestSessionDate = trendSessions[trendSessions.length - 1]?.date;
+
+    if (!latestSessionDate) {
+      return {
+        sessionCount: 0,
+        averageRfd: null as number | null,
+        peakRfd: null as number | null
+      };
+    }
+
+    const cutoff = new Date(`${latestSessionDate}T12:00:00`);
+    cutoff.setDate(cutoff.getDate() - 60);
+
+    const windowSessions = trendSessions.filter((session) => {
+      const sessionDate = new Date(`${session.date}T12:00:00`);
+      return sessionDate >= cutoff;
+    });
+
+    return {
+      sessionCount: windowSessions.length,
+      averageRfd: windowSessions.length
+        ? windowSessions.reduce((sum, session) => sum + session.bestRfd, 0) / windowSessions.length
+        : null,
+      peakRfd: windowSessions.length
+        ? Math.max(...windowSessions.map((session) => session.bestRfd))
+        : null
+    };
+  }, [trendSessions]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -243,6 +280,49 @@ export default function PlayerQuickViewDrawer({
                     imbalanceAbs={stats.imbalanceAbs}
                     imbalancePct={stats.imbalancePct}
                   />
+                </div>
+
+                <div className="mt-5 rounded-2xl bg-white p-4 shadow-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-blue/70">
+                        Past 60 Days
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Based on the player&apos;s latest session in the current view
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-4 md:grid-cols-3">
+                    <div className="rounded-2xl bg-slate-50/80 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        Sessions
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-brand-ink">
+                        {sixtyDaySnapshot.sessionCount}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-slate-50/80 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        Average
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-brand-ink">
+                        {sixtyDaySnapshot.averageRfd !== null
+                          ? formatNumber(sixtyDaySnapshot.averageRfd)
+                          : "—"}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-slate-50/80 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        Peak
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-brand-ink">
+                        {sixtyDaySnapshot.peakRfd !== null
+                          ? formatNumber(sixtyDaySnapshot.peakRfd)
+                          : "—"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </section>
 
