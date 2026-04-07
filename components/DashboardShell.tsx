@@ -215,10 +215,8 @@ function ReviewPanel({
     <article className="rounded-3xl border border-white/60 bg-white/95 p-5 shadow-soft">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
-            Review Queue · {rows.length} players flagged
-          </p>
-          <h3 className="mt-2 text-lg font-semibold text-brand-ink">Review Queue</h3>
+          <h3 className="text-lg font-semibold text-brand-ink">Review Queue</h3>
+          <p className="mt-1 text-sm text-slate-500">{rows.length} players flagged</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {rows.length > 4 ? (
@@ -1186,6 +1184,8 @@ export default function DashboardShell({
               />
 
               <div className="space-y-6">
+                <SectionPanel title="Top Performers" items={topPerformers} />
+                <SectionPanel title="Most Sessions" items={mostSessions} />
                 <section id="coach-review-queue">
                   <ReviewPanel
                     rows={flaggedPlayers}
@@ -1193,8 +1193,6 @@ export default function DashboardShell({
                     onPlayerContextMenu={handlePlayerContextMenu}
                   />
                 </section>
-                <SectionPanel title="Top Performers" items={topPerformers} />
-                <SectionPanel title="Most Sessions" items={mostSessions} />
               </div>
             </div>
 
