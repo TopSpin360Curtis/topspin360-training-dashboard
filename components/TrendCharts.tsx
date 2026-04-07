@@ -46,6 +46,7 @@ function Gauge({
   color: string;
 }) {
   const percentage = maxValue ? Math.min(100, (value / maxValue) * 100) : 0;
+  const degrees = (percentage / 100) * 360;
 
   return (
     <div className="rounded-xl border border-white/60 bg-white/95 p-4 shadow-soft">
@@ -55,15 +56,15 @@ function Gauge({
       <div
         className="mx-auto mt-4 flex h-[100px] w-[100px] items-center justify-center rounded-full"
         style={{
-          background: `conic-gradient(${color} ${percentage * 1.8}deg, rgba(16, 33, 58, 0.08) 0deg)`
+          background: `conic-gradient(${color} 0deg ${degrees}deg, rgba(16, 33, 58, 0.08) ${degrees}deg 360deg)`
         }}
       >
         <div className="flex h-[72px] w-[72px] flex-col items-center justify-center rounded-full bg-white">
           <span className="text-lg font-semibold text-brand-ink">
             {formatNumber(value)}
           </span>
-          <span className="mt-1 text-[10px] uppercase tracking-[0.18em] text-slate-400">
-            {Math.round(percentage)}%
+          <span className="mt-1 text-center text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+            {Math.round(percentage)}% to Lower Risk Profile
           </span>
         </div>
       </div>
@@ -79,13 +80,7 @@ export default function TrendCharts({
   dateRangeLabel
 }: TrendChartsProps) {
   const metrics = getRecentBestMetrics(sessions, player);
-  const gaugeMax = Math.max(
-    35,
-    metrics.allTimeCCW,
-    metrics.allTimeCW,
-    metrics.recentCCW,
-    metrics.recentCW
-  );
+  const lowerRiskThreshold = 35;
 
   return (
     <div className="space-y-6">
@@ -204,25 +199,25 @@ export default function TrendCharts({
           <Gauge
             label="Best RFD All-Time (CCW)"
             value={metrics.allTimeCCW}
-            maxValue={gaugeMax}
+            maxValue={lowerRiskThreshold}
             color="#1a6fc4"
           />
           <Gauge
             label="Best RFD All-Time (CW)"
             value={metrics.allTimeCW}
-            maxValue={gaugeMax}
+            maxValue={lowerRiskThreshold}
             color="#e88c3a"
           />
           <Gauge
             label="Best RFD Past Month (CCW)"
             value={metrics.recentCCW}
-            maxValue={gaugeMax}
+            maxValue={lowerRiskThreshold}
             color="#1a6fc4"
           />
           <Gauge
             label="Best RFD Past Month (CW)"
             value={metrics.recentCW}
-            maxValue={gaugeMax}
+            maxValue={lowerRiskThreshold}
             color="#e88c3a"
           />
         </div>
