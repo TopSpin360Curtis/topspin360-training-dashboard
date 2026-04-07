@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
         profile,
         source: result.data.length ? "sheets" : "sample",
         message: result.data.length
-          ? `Loaded ${profileLabel} private Google Sheet${range ? ` from ${range}` : ""}.`
+          ? `Loaded ${profileLabel} Data`
           : result.valueRowCount > 0
             ? `Connected to the ${profileLabel} private Google Sheet, but none of the rows in ${
                 range ?? "the selected range"
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
         profile,
         source: data.length ? "sheets" : "sample",
         message: data.length
-          ? `Loaded ${profileLabel} data from Google Sheets.`
+          ? `Loaded ${profileLabel} Data`
           : `The ${profileLabel} Google Sheet was empty, so sample data is being shown.`
       });
     }
