@@ -109,9 +109,6 @@ export default function Navbar({
                 : "border-brand-orange/20 bg-amber-50 text-brand-orange"
             }`}
           >
-            <span className="text-xs font-semibold uppercase tracking-[0.22em]">
-              Active Mode
-            </span>
             <span className="rounded-full bg-white/80 px-3 py-1 text-sm font-semibold">
               {tenantLabel ?? (dataProfile === "team" ? "Team Data" : "Test Data")}
             </span>
@@ -217,10 +214,7 @@ export default function Navbar({
               <div className="absolute right-0 top-14 w-48 rounded-2xl border border-slate-200 bg-white p-2 shadow-soft">
                 {canLogout ? (
                   <div className="rounded-xl bg-slate-50 px-3 py-3 text-sm">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Active Mode
-                    </p>
-                    <p className="mt-1 font-semibold text-brand-ink">
+                    <p className="font-semibold text-brand-ink">
                       {tenantLabel ?? (dataProfile === "team" ? "Team Data" : "Test Data")}
                     </p>
                   </div>

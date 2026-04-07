@@ -6,10 +6,12 @@ import type { DashboardProfile } from "@/lib/types";
 
 export default function LoginForm({
   nextPath,
-  mode
+  mode,
+  tenantLabel
 }: {
   nextPath: string;
   mode: DashboardProfile;
+  tenantLabel?: string;
 }) {
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -80,7 +82,9 @@ export default function LoginForm({
         disabled={isPending}
         className="w-full rounded-2xl bg-brand-blue px-4 py-3 text-sm font-semibold text-white transition hover:brightness-95 disabled:cursor-wait disabled:opacity-70"
       >
-        {isPending ? "Opening dashboard..." : `Enter ${mode === "team" ? "Team" : "Test"} Dashboard`}
+        {isPending
+          ? "Opening dashboard..."
+          : `Enter ${tenantLabel ?? (mode === "team" ? "Team" : "Test")} Dashboard`}
       </button>
     </form>
   );

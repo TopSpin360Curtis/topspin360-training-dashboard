@@ -131,6 +131,20 @@ function arraysEqual(left: string[], right: string[]) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
+function formatLastUpdated(value?: string) {
+  if (!value) {
+    return "Not synced yet";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
 function SectionPanel({
   title,
   items
@@ -323,6 +337,7 @@ export default function DashboardShell({
   const dayOfWeekExportRef = useRef<HTMLElement | null>(null);
   const injuryExportRef = useRef<HTMLElement | null>(null);
   const goalsExportRef = useRef<HTMLElement | null>(null);
+  const autoSyncedNamespaceRef = useRef<string | null>(null);
   const [profileReady, setProfileReady] = useState(false);
   const storageNamespace = authenticatedTenant ? `tenant-${authenticatedTenant.id}` : activeProfile;
   const activeDatasetLabel = authenticatedTenant?.label ?? PROFILE_LABELS[activeProfile];
@@ -501,6 +516,19 @@ export default function DashboardShell({
     setPlayerInjuries(loadPlayerInjuries(activeProfile, storageNamespace));
     setProfileReady(true);
   }, [activeProfile, storageNamespace]);
+
+  useEffect(() => {
+    if (!authenticatedTenant || !profileReady) {
+      return;
+    }
+
+    if (autoSyncedNamespaceRef.current === storageNamespace) {
+      return;
+    }
+
+    autoSyncedNamespaceRef.current = storageNamespace;
+    void handleSyncSheets();
+  }, [authenticatedTenant, profileReady, storageNamespace]);
 
   function handleProfileChange(nextProfile: DashboardProfile) {
     if (modeLocked) {
@@ -691,7 +719,8 @@ export default function DashboardShell({
           setSourceMeta({
             source: "csv",
             profile: activeProfile,
-            message: `Loaded ${cleaned.length} valid rows into ${activeDatasetLabel} from ${file.name}. Non-name labels and invalid player IDs were excluded.`
+            message: `Loaded ${cleaned.length} valid rows into ${activeDatasetLabel} from ${file.name}. Non-name labels and invalid player IDs were excluded.`,
+            updatedAt: new Date().toISOString()
           });
         }
       }
@@ -741,7 +770,8 @@ export default function DashboardShell({
           profile: payload.profile ?? activeProfile,
           message:
             payload.message ??
-            `Synced ${activeDatasetLabel} Google Sheets manually. Only full-name players are included.`
+            `Synced ${activeDatasetLabel} Google Sheets manually. Only full-name players are included.`,
+          updatedAt: new Date().toISOString()
         });
       } else {
         setSourceMeta({
@@ -749,7 +779,8 @@ export default function DashboardShell({
           profile: payload.profile ?? activeProfile,
           message:
             payload.message ??
-            "Manual sheet sync returned no valid player rows, so the current dataset was left unchanged."
+            "Manual sheet sync returned no valid player rows, so the current dataset was left unchanged.",
+          updatedAt: new Date().toISOString()
         });
       }
     } catch (error) {
@@ -759,7 +790,8 @@ export default function DashboardShell({
         message:
           error instanceof Error
             ? error.message
-            : "Manual Sheets sync failed. The current dataset was left unchanged."
+            : "Manual Sheets sync failed. The current dataset was left unchanged.",
+        updatedAt: new Date().toISOString()
       });
     } finally {
       setIsSyncingSheets(false);
@@ -952,29 +984,8 @@ export default function DashboardShell({
       />
 
       <main className="print-panel mx-auto mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
-        <section className="rounded-3xl border border-white/60 bg-gradient-to-r from-brand-blue to-sky-500 px-6 py-5 text-white shadow-soft">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/70">
-                Data source
-              </p>
-              <h2 className="mt-1 text-2xl font-semibold">
-                {sourceMeta.source === "sheets"
-                  ? `${activeDatasetLabel} connected`
-                  : sourceMeta.source === "csv"
-                    ? `${activeDatasetLabel} CSV loaded`
-                    : `${activeDatasetLabel} sample data`}
-              </h2>
-            </div>
-            <p className="max-w-2xl text-sm text-white/85">
-              {sourceMeta.message ??
-                "Track team readiness, compare players, and monitor benchmark progress in one dashboard."}
-            </p>
-          </div>
-        </section>
-
         <section
-          className="no-print sticky z-40 -mx-4 mt-6 px-4 py-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+          className="no-print sticky z-40 -mx-4 px-4 py-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
           style={{ top: "calc(var(--topspin-navbar-height, 84px) + 8px)" }}
         >
           <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
@@ -1313,6 +1324,23 @@ export default function DashboardShell({
             />
           </section>
         ) : null}
+
+        <section className="mt-6 rounded-3xl border border-white/60 bg-white/95 px-5 py-4 shadow-soft">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
+                Last updated
+              </p>
+              <p className="mt-1 text-sm font-semibold text-brand-ink">
+                {formatLastUpdated(sourceMeta.updatedAt)}
+              </p>
+            </div>
+            <p className="max-w-3xl text-sm text-slate-500">
+              {sourceMeta.message ??
+                "Track team readiness, compare players, and monitor benchmark progress in one dashboard."}
+            </p>
+          </div>
+        </section>
       </main>
 
       <AlertsModal

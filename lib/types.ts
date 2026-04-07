@@ -176,4 +176,5 @@ export type DataSourceMeta = {
   source: "sheets" | "csv" | "sample";
   profile?: DashboardProfile;
   message?: string;
+  updatedAt?: string;
 };
