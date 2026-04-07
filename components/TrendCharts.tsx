@@ -53,20 +53,22 @@ function Gauge({
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
         {label}
       </p>
-      <div
-        className="mx-auto mt-4 flex h-[100px] w-[100px] items-center justify-center rounded-full"
-        style={{
-          background: `conic-gradient(${color} 0deg ${degrees}deg, rgba(16, 33, 58, 0.08) ${degrees}deg 360deg)`
-        }}
-      >
-        <div className="flex h-[72px] w-[72px] flex-col items-center justify-center rounded-full bg-white">
-          <span className="text-lg font-semibold text-brand-ink">
-            {formatNumber(value)}
-          </span>
-          <span className="mt-1 text-center text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-            {Math.round(percentage)}% to Lower Risk Profile
-          </span>
+      <div className="mt-4 flex flex-col items-center">
+        <div
+          className="flex h-[100px] w-[100px] items-center justify-center rounded-full"
+          style={{
+            background: `conic-gradient(${color} 0deg ${degrees}deg, rgba(16, 33, 58, 0.08) ${degrees}deg 360deg)`
+          }}
+        >
+          <div className="flex h-[72px] w-[72px] flex-col items-center justify-center rounded-full bg-white">
+            <span className="text-lg font-semibold text-brand-ink">
+              {formatNumber(value)}
+            </span>
+          </div>
         </div>
+        <p className="mt-3 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+          {Math.round(percentage)}% to Lower Risk Profile
+        </p>
       </div>
     </div>
   );
