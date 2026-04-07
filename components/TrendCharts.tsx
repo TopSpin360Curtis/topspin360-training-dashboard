@@ -82,7 +82,7 @@ export default function TrendCharts({
   dateRangeLabel
 }: TrendChartsProps) {
   const metrics = getRecentBestMetrics(sessions, player);
-  const lowerRiskThreshold = 35;
+  const lowerRiskThreshold = 33;
 
   return (
     <div className="space-y-6">

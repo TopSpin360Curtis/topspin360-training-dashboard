@@ -51,19 +51,19 @@ export const RISK_BAND_META: Record<
   moderate: {
     label: "Moderate Risk",
     shortLabel: "Moderate",
-    description: "11.01 to 22.00",
+    description: "11.00 to 22.00",
     tones: "bg-amber-50 text-amber-700 ring-amber-200"
   },
   lower: {
     label: "Lower Risk",
     shortLabel: "Lower",
-    description: "22.01 to 35.00",
+    description: "22.00 to 33.00",
     tones: "bg-emerald-50 text-emerald-700 ring-emerald-200"
   },
   lowest: {
     label: "Lowest Risk",
     shortLabel: "Lowest",
-    description: "35.00+",
+    description: "33.00+",
     tones: "bg-sky-50 text-sky-700 ring-sky-200"
   }
 };
@@ -177,7 +177,7 @@ export function getRiskBand(value: number): RiskBand {
     return "moderate";
   }
 
-  if (value <= 35) {
+  if (value <= 33) {
     return "lower";
   }
 
