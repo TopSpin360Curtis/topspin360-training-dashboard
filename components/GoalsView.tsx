@@ -72,6 +72,7 @@ export default function GoalsView({
   onPlayerContextMenu
 }: GoalsViewProps) {
   const [activeRiskBand, setActiveRiskBand] = useState<RiskBand | null>(null);
+  const [riskBandMetric, setRiskBandMetric] = useState<"avg" | "best">("avg");
   const playerGoalStats = useMemo(
     () =>
       players.map((player) => {
@@ -80,31 +81,40 @@ export default function GoalsView({
         return {
           player,
           stats,
-          goalRiskBand: getRiskBand(stats.bestRFD)
+          averageRiskBand: getRiskBand(stats.avgRFD),
+          bestRiskBand: getRiskBand(stats.bestRFD)
         };
       }),
     [data, players]
   );
   const teamProgress = getTeamBenchmarkProgress(data, config);
   const goalBandCounts = useMemo(
-    () =>
-      teamProgress.bandCounts.map((band) => {
-        const count = playerGoalStats.filter((player) => player.goalRiskBand === band.band).length;
+    () => {
+      const getBand = (player: (typeof playerGoalStats)[number]) =>
+        riskBandMetric === "avg" ? player.averageRiskBand : player.bestRiskBand;
+
+      return teamProgress.bandCounts.map((band) => {
+        const count = playerGoalStats.filter((player) => getBand(player) === band.band).length;
 
         return {
           ...band,
           count,
           percentage: playerGoalStats.length ? (count / playerGoalStats.length) * 100 : 0
         };
-      }),
-    [playerGoalStats, teamProgress.bandCounts]
+      });
+    },
+    [playerGoalStats, riskBandMetric, teamProgress.bandCounts]
   );
   const filteredPlayerGoalStats = useMemo(
-    () =>
-      activeRiskBand
-        ? playerGoalStats.filter(({ goalRiskBand }) => goalRiskBand === activeRiskBand)
-        : playerGoalStats,
-    [activeRiskBand, playerGoalStats]
+    () => {
+      const getBand = (player: (typeof playerGoalStats)[number]) =>
+        riskBandMetric === "avg" ? player.averageRiskBand : player.bestRiskBand;
+
+      return activeRiskBand
+        ? playerGoalStats.filter((player) => getBand(player) === activeRiskBand)
+        : playerGoalStats;
+    },
+    [activeRiskBand, playerGoalStats, riskBandMetric]
   );
 
   return (
@@ -127,18 +137,44 @@ export default function GoalsView({
 
         <article className="rounded-3xl border border-white/60 bg-white/95 p-5 shadow-soft xl:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
-              Risk Band Distribution
-            </p>
-            {activeRiskBand ? (
-              <button
-                type="button"
-                onClick={() => setActiveRiskBand(null)}
-                className="text-sm font-semibold text-brand-blue transition hover:text-brand-ink"
-              >
-                Clear filter
-              </button>
-            ) : null}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
+                Risk Band Distribution
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Based on {riskBandMetric === "avg" ? "Average RFD" : "Best RFD"}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="inline-flex rounded-full bg-slate-100 p-1">
+                {[
+                  { label: "Average RFD", value: "avg" },
+                  { label: "Best RFD", value: "best" }
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setRiskBandMetric(option.value as "avg" | "best")}
+                    className={`min-h-10 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                      riskBandMetric === option.value
+                        ? "bg-white text-brand-blue shadow-sm"
+                        : "text-slate-600 hover:text-brand-ink"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              {activeRiskBand ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveRiskBand(null)}
+                  className="text-sm font-semibold text-brand-blue transition hover:text-brand-ink"
+                >
+                  Clear filter
+                </button>
+              ) : null}
+            </div>
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-4">
             {goalBandCounts.map((band) => (
@@ -261,7 +297,8 @@ export default function GoalsView({
             )}
           </div>
           <div className="mt-5 grid gap-4">
-            {filteredPlayerGoalStats.map(({ player, stats, goalRiskBand }) => {
+            {filteredPlayerGoalStats.map(({ player, stats, averageRiskBand, bestRiskBand }) => {
+              const activeBand = riskBandMetric === "avg" ? averageRiskBand : bestRiskBand;
               const target = config.playerTargets[player];
               const rfdProgress = target ? (stats.bestRFD / target.rfdTarget) * 100 : 0;
               const sessionProgress = target
@@ -284,7 +321,7 @@ export default function GoalsView({
                         >
                           {player}
                         </button>
-                        <RiskBandBadge band={goalRiskBand} compact />
+                        <RiskBandBadge band={activeBand} compact />
                       </div>
                       <p className="mt-1 text-sm text-slate-500">
                         Best {formatNumber(stats.bestRFD)} | Sessions {stats.sessions}
