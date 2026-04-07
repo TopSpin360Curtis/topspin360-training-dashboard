@@ -22,6 +22,7 @@ type LeaderboardProps = {
   sortKey: SortKey;
   sortDirection: "asc" | "desc";
   onSortChange: (key: SortKey) => void;
+  onPlayerClick?: (player: string) => void;
   onPlayerContextMenu?: (
     player: string,
     event: MouseEvent<HTMLElement>
@@ -61,6 +62,7 @@ export default function Leaderboard({
   sortKey,
   sortDirection,
   onSortChange,
+  onPlayerClick,
   onPlayerContextMenu
 }: LeaderboardProps) {
   const headings: Array<{
@@ -115,7 +117,13 @@ export default function Leaderboard({
             >
               <td className="px-4 py-4 font-semibold text-brand-ink">{row.rank}</td>
               <td className="px-4 py-4">
-                <p className="font-medium text-brand-ink">{row.player}</p>
+                <button
+                  type="button"
+                  onClick={() => onPlayerClick?.(row.player)}
+                  className="font-medium text-brand-ink transition hover:text-brand-blue"
+                >
+                  {row.player}
+                </button>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <RiskBandBadge band={row.riskBand} />
                   <TrendStatusChip status={row.trendStatus} />

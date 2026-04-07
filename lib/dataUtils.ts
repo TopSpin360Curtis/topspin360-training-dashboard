@@ -671,6 +671,14 @@ export function getSessionHistory(data: TrainingSession[], playerName: string) {
   });
 }
 
+export function getRecentPlayerSessions(
+  data: TrainingSession[],
+  playerName: string,
+  limit = 5
+) {
+  return getSessionHistory(data, playerName).slice(-limit).reverse();
+}
+
 export function getRollingAverageData(values: number[], windowSize = 3) {
   return values.map((_, index) => {
     const start = Math.max(0, index - windowSize + 1);

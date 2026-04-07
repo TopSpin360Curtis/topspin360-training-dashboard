@@ -24,6 +24,7 @@ type GoalsViewProps = {
   onExportCsv: () => void;
   teamAverage: number;
   teamAverageChangePct: number;
+  onPlayerClick?: (player: string) => void;
   onPlayerContextMenu?: (player: string, event: MouseEvent<HTMLElement>) => void;
 };
 
@@ -67,6 +68,7 @@ export default function GoalsView({
   onExportCsv,
   teamAverage,
   teamAverageChangePct,
+  onPlayerClick,
   onPlayerContextMenu
 }: GoalsViewProps) {
   const [activeRiskBand, setActiveRiskBand] = useState<RiskBand | null>(null);
@@ -274,12 +276,14 @@ export default function GoalsView({
                   <div className="grid gap-4 lg:grid-cols-[1fr_0.8fr_0.8fr] lg:items-start">
                     <div>
                       <div className="flex items-center justify-between gap-3">
-                        <p
-                          className="font-semibold text-brand-ink"
+                        <button
+                          type="button"
+                          className="font-semibold text-brand-ink transition hover:text-brand-blue"
+                          onClick={() => onPlayerClick?.(player)}
                           onContextMenu={(event) => onPlayerContextMenu?.(player, event)}
                         >
                           {player}
-                        </p>
+                        </button>
                         <RiskBandBadge band={goalRiskBand} compact />
                       </div>
                       <p className="mt-1 text-sm text-slate-500">

@@ -23,6 +23,7 @@ import InjuryModal from "@/components/InjuryModal";
 import InjuryView from "@/components/InjuryView";
 import Leaderboard from "@/components/Leaderboard";
 import Navbar from "@/components/Navbar";
+import PlayerQuickViewDrawer from "@/components/PlayerQuickViewDrawer";
 import RiskBandBadge from "@/components/RiskBandBadge";
 import StatCard from "@/components/StatCard";
 import TeamAverageComparator from "@/components/TeamAverageComparator";
@@ -47,6 +48,7 @@ import {
   getMostSessions,
   getOrderedWeekdays,
   getPeriodRange,
+  getRecentPlayerSessions,
   getPlayerStats,
   getPlayerTrendSeries,
   getRiskBand,
@@ -183,6 +185,7 @@ function SectionPanel({
 
 function ReviewPanel({
   rows,
+  onPlayerClick,
   onPlayerContextMenu
 }: {
   rows: Array<{
@@ -190,6 +193,7 @@ function ReviewPanel({
     reviewPriority: ReviewPriority;
     reviewReasons: string[];
   }>;
+  onPlayerClick?: (player: string) => void;
   onPlayerContextMenu?: (player: string, event: MouseEvent<HTMLElement>) => void;
 }) {
   const toneMap: Record<ReviewPriority, string> = {
@@ -242,9 +246,8 @@ function ReviewPanel({
           const isExpanded = expandedPlayer === row.player;
 
           return (
-            <button
+            <div
               key={row.player}
-              type="button"
               onClick={() =>
                 setExpandedPlayer((current) => (current === row.player ? null : row.player))
               }
@@ -252,7 +255,16 @@ function ReviewPanel({
               onContextMenu={(event) => onPlayerContextMenu?.(row.player, event)}
             >
               <div className="flex items-start justify-between gap-3">
-                <p className="text-sm font-semibold text-brand-ink">{row.player}</p>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onPlayerClick?.(row.player);
+                  }}
+                  className="text-sm font-semibold text-brand-ink transition hover:text-brand-blue"
+                >
+                  {row.player}
+                </button>
                 <span className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
                   {labelMap[row.reviewPriority]}
                 </span>
@@ -264,7 +276,7 @@ function ReviewPanel({
               >
                 {row.reviewReasons.join(" · ")}
               </p>
-            </button>
+            </div>
           );
         })}
         {!rows.length ? (
@@ -326,6 +338,7 @@ export default function DashboardShell({
     y: number;
   } | null>(null);
   const [injuryModalPlayer, setInjuryModalPlayer] = useState<string | null>(null);
+  const [selectedPlayerDetail, setSelectedPlayerDetail] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState<{
     playerName?: string;
     dayOfWeek?: string;
@@ -448,6 +461,15 @@ export default function DashboardShell({
     "";
   const trendPlayerStats = getPlayerStats(filteredData, trendPlayer);
   const trendSessions = getPlayerTrendSeries(filteredData, trendPlayer, teamScopeData);
+  const playerQuickViewStats = selectedPlayerDetail
+    ? getPlayerStats(filteredData, selectedPlayerDetail)
+    : null;
+  const playerQuickViewTrendSessions = selectedPlayerDetail
+    ? getPlayerTrendSeries(filteredData, selectedPlayerDetail, teamScopeData)
+    : [];
+  const playerQuickViewRecentSessions = selectedPlayerDetail
+    ? getRecentPlayerSessions(filteredData, selectedPlayerDetail, 5)
+    : [];
   const dayPlayer = players.includes(selectedDayPlayer) ? selectedDayPlayer : players[0] || "";
   const dayScopedData =
     dayViewMode === "individual" && dayPlayer
@@ -906,6 +928,38 @@ export default function DashboardShell({
     setInjuryModalPlayer(player);
   }
 
+  function handleOpenPlayerQuickView(player: string) {
+    setContextMenu(null);
+    setSelectedPlayerDetail(player);
+  }
+
+  function handleClosePlayerQuickView() {
+    setSelectedPlayerDetail(null);
+  }
+
+  function handleOpenPlayerQuickViewTrends(player: string) {
+    setSelectedTrendPlayer(player);
+    setSelectedPlayers([player]);
+    setViewMode("individual");
+    setActiveTab("trends");
+    setSelectedPlayerDetail(null);
+  }
+
+  function handleAddPlayerQuickViewNote(player: string) {
+    const latestSession = getRecentPlayerSessions(filteredData, player, 1)[0];
+
+    setSelectedTrendPlayer(player);
+    setSelectedPlayers([player]);
+    setViewMode("individual");
+    setActiveTab("trends");
+    setNoteDraft({
+      playerName: player,
+      dayOfWeek: latestSession?.dayOfWeek,
+      noteDate: latestSession?.date
+    });
+    setSelectedPlayerDetail(null);
+  }
+
   function handleSavePlayerInjury(injury: PlayerInjury) {
     if (!injuryModalPlayer) {
       return;
@@ -1124,6 +1178,7 @@ export default function DashboardShell({
             <section id="coach-review-queue">
               <ReviewPanel
                 rows={flaggedPlayers}
+                onPlayerClick={handleOpenPlayerQuickView}
                 onPlayerContextMenu={handlePlayerContextMenu}
               />
             </section>
@@ -1134,6 +1189,7 @@ export default function DashboardShell({
                 sortKey={sortKey}
                 sortDirection={sortDirection}
                 onSortChange={handleSortChange}
+                onPlayerClick={handleOpenPlayerQuickView}
                 onPlayerContextMenu={handlePlayerContextMenu}
               />
 
@@ -1271,6 +1327,7 @@ export default function DashboardShell({
               onSelectionChange={setComparePlayers}
               data={filteredData}
               teamAverage={teamAverage}
+              onPlayerClick={handleOpenPlayerQuickView}
               onPlayerContextMenu={handlePlayerContextMenu}
             />
           </section>
@@ -1305,6 +1362,8 @@ export default function DashboardShell({
               injuries={playerInjuries}
               teamAverage={teamAverage}
               onAddInjuryRequest={handleOpenInjuryModal}
+              onPlayerClick={handleOpenPlayerQuickView}
+              onPlayerContextMenu={handlePlayerContextMenu}
             />
           </section>
         ) : null}
@@ -1320,10 +1379,30 @@ export default function DashboardShell({
               onExportCsv={handleExportCsv}
               teamAverage={teamAverage}
               teamAverageChangePct={displayedChangePct}
+              onPlayerClick={handleOpenPlayerQuickView}
               onPlayerContextMenu={handlePlayerContextMenu}
             />
           </section>
         ) : null}
+
+        <PlayerQuickViewDrawer
+          isOpen={Boolean(selectedPlayerDetail)}
+          player={selectedPlayerDetail}
+          stats={playerQuickViewStats}
+          recentSessions={playerQuickViewRecentSessions}
+          trendSessions={playerQuickViewTrendSessions}
+          teamAverage={teamAverage}
+          dateRangeLabel={
+            startDate && endDate ? `${startDate} to ${endDate}` : "Current filter window"
+          }
+          onClose={handleClosePlayerQuickView}
+          onOpenFullTrends={handleOpenPlayerQuickViewTrends}
+          onAddNote={handleAddPlayerQuickViewNote}
+          onMarkInjured={(player) => {
+            handleOpenInjuryModal(player);
+            setSelectedPlayerDetail(null);
+          }}
+        />
 
         <section className="mt-6 rounded-3xl border border-white/60 bg-white/95 px-5 py-4 shadow-soft">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

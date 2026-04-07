@@ -26,6 +26,7 @@ type CompareViewProps = {
   onSelectionChange: (players: string[]) => void;
   data: TrainingSession[];
   teamAverage: number;
+  onPlayerClick?: (player: string) => void;
   onPlayerContextMenu?: (player: string, event: MouseEvent<HTMLElement>) => void;
 };
 
@@ -35,6 +36,7 @@ export default function CompareView({
   onSelectionChange,
   data,
   teamAverage,
+  onPlayerClick,
   onPlayerContextMenu
 }: CompareViewProps) {
   const [playerFilter, setPlayerFilter] = useState("");
@@ -186,12 +188,14 @@ export default function CompareView({
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p
-                  className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70"
+                <button
+                  type="button"
+                  className="text-left text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70 transition hover:text-brand-blue"
+                  onClick={() => onPlayerClick?.(stat.player)}
                   onContextMenu={(event) => onPlayerContextMenu?.(stat.player, event)}
                 >
                   {stat.player}
-                </p>
+                </button>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <RiskBandBadge band={stat.riskBand} compact />
                   <TrendStatusChip status={stat.trendStatus} />

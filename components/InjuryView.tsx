@@ -1,5 +1,6 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import InjuryDetailPanel from "@/components/InjuryDetailPanel";
 import RiskBandBadge from "@/components/RiskBandBadge";
@@ -19,6 +20,8 @@ type InjuryViewProps = {
   injuries: PlayerInjuryMap;
   teamAverage: number;
   onAddInjuryRequest: (player: string) => void;
+  onPlayerClick?: (player: string) => void;
+  onPlayerContextMenu?: (player: string, event: MouseEvent<HTMLElement>) => void;
 };
 
 function formatInjuryType(value: "head" | "neck") {
@@ -31,7 +34,9 @@ export default function InjuryView({
   data,
   injuries,
   teamAverage,
-  onAddInjuryRequest
+  onAddInjuryRequest,
+  onPlayerClick,
+  onPlayerContextMenu
 }: InjuryViewProps) {
   const [selectedInjuryId, setSelectedInjuryId] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -247,7 +252,22 @@ export default function InjuryView({
                       isSelected ? "bg-brand-blue/5 ring-1 ring-inset ring-brand-blue/20" : ""
                     }`}
                   >
-                    <td className="px-4 py-4 font-semibold text-brand-ink">{row.player}</td>
+                    <td className="px-4 py-4 font-semibold text-brand-ink">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onPlayerClick?.(row.player);
+                        }}
+                        onContextMenu={(event) => {
+                          event.stopPropagation();
+                          onPlayerContextMenu?.(row.player, event);
+                        }}
+                        className="transition hover:text-brand-blue"
+                      >
+                        {row.player}
+                      </button>
+                    </td>
                     <td className="px-4 py-4">
                       <div className="space-y-2">
                         <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
