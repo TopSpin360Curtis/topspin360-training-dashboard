@@ -9,6 +9,7 @@ type NavbarProps = {
   onViewChange: (value: "individual" | "team") => void;
   dataProfile: DashboardProfile;
   tenantLabel?: string;
+  tenantLoginPath?: string;
   onProfileChange: (value: DashboardProfile) => void;
   modeLocked?: boolean;
   onExportCsv: () => void;
@@ -26,6 +27,7 @@ export default function Navbar({
   onViewChange,
   dataProfile,
   tenantLabel,
+  tenantLoginPath,
   onProfileChange,
   modeLocked = false,
   onExportCsv,
@@ -75,7 +77,7 @@ export default function Navbar({
     await fetch("/api/auth/logout", {
       method: "POST"
     });
-    router.replace(`/login/${dataProfile}`);
+    router.replace(tenantLoginPath ?? `/login/${dataProfile}`);
     router.refresh();
   }
 

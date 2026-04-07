@@ -1,10 +1,16 @@
 import Link from "next/link";
 import LoginForm from "@/components/LoginForm";
-import type { DashboardProfile } from "@/lib/types";
+import {
+  getDefaultLoginPathForMode,
+  getDefaultTenantForMode,
+  getLoginPathForTenant
+} from "@/lib/auth";
+import type { DashboardProfile, DashboardTenant } from "@/lib/types";
 
 type ModeLoginScreenProps = {
   mode: DashboardProfile;
   nextPath: string;
+  tenant?: DashboardTenant | null;
 };
 
 const MODE_META: Record<
@@ -38,8 +44,15 @@ const MODE_META: Record<
   }
 };
 
-export default function ModeLoginScreen({ mode, nextPath }: ModeLoginScreenProps) {
+export default function ModeLoginScreen({ mode, nextPath, tenant = null }: ModeLoginScreenProps) {
   const meta = MODE_META[mode];
+  const loginRoute = tenant ? getLoginPathForTenant(tenant.id) : getDefaultLoginPathForMode(mode);
+  const alternateMode = mode === "team" ? "test" : "team";
+  const alternateTenant = getDefaultTenantForMode(alternateMode);
+  const alternateHref = alternateTenant
+    ? getLoginPathForTenant(alternateTenant.id)
+    : meta.alternateHref;
+  const badgeLabel = tenant?.label ?? meta.label;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(26,111,196,0.18),_transparent_40%),linear-gradient(180deg,_#f7fbff_0%,_#eef3f9_100%)] px-4 py-10">
@@ -61,10 +74,10 @@ export default function ModeLoginScreen({ mode, nextPath }: ModeLoginScreenProps
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
               Login Route
             </p>
-            <p className="mt-1 text-sm font-semibold text-brand-ink">{mode === "team" ? "/login/team" : "/login/test"}</p>
+            <p className="mt-1 text-sm font-semibold text-brand-ink">{loginRoute}</p>
           </div>
           <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${meta.accent}`}>
-            {meta.label}
+            {badgeLabel}
           </span>
         </div>
 
@@ -75,7 +88,7 @@ export default function ModeLoginScreen({ mode, nextPath }: ModeLoginScreenProps
         <div className="mt-5 flex items-center justify-between gap-3 text-sm">
           <span className="text-slate-500">Need the other environment?</span>
           <Link
-            href={meta.alternateHref}
+            href={alternateHref}
             className="font-semibold text-brand-blue transition hover:text-brand-ink"
           >
             {meta.alternateLabel}

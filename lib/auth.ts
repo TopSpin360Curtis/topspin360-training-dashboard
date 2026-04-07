@@ -144,6 +144,26 @@ export function getLoginPathForMode(mode: DashboardProfile) {
   return `/login/${mode}`;
 }
 
+export function getLoginPathForTenant(tenantId: string) {
+  return `/login/${normalizeTenantId(tenantId)}`;
+}
+
+export function getDefaultTenantForMode(mode: DashboardProfile) {
+  const tenant = getTenantConfigsFromEnv().find((entry) => entry.profile === mode);
+
+  if (!tenant) {
+    return null;
+  }
+
+  const { password: _password, ...safeTenant } = tenant;
+  return safeTenant;
+}
+
+export function getDefaultLoginPathForMode(mode: DashboardProfile) {
+  const tenant = getDefaultTenantForMode(mode);
+  return tenant ? getLoginPathForTenant(tenant.id) : getLoginPathForMode(mode);
+}
+
 export function getDashboardModeFromCookieValue(value: string | null | undefined) {
   return isDashboardMode(value) ? value : null;
 }

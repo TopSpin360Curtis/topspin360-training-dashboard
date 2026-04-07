@@ -1,18 +1,6 @@
-import ModeLoginScreen from "@/components/ModeLoginScreen";
+import { redirect } from "next/navigation";
+import { getDefaultLoginPathForMode } from "@/lib/auth";
 
-export default async function TestLoginPage({
-  searchParams
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const resolvedSearchParams = await searchParams;
-  const nextValue = resolvedSearchParams.next;
-  const nextPath =
-    typeof nextValue === "string"
-      ? nextValue
-      : Array.isArray(nextValue)
-        ? nextValue[0] || "/"
-        : "/";
-
-  return <ModeLoginScreen mode="test" nextPath={nextPath} />;
+export default function TestLoginRedirectPage() {
+  redirect(getDefaultLoginPathForMode("test"));
 }

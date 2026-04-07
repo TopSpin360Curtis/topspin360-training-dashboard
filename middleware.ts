@@ -6,7 +6,7 @@ import {
   AUTH_TENANT_COOKIE_NAME,
   DEFAULT_AUTH_MODE,
   getTenantById,
-  getLoginPathForMode,
+  getDefaultLoginPathForMode,
   isAuthenticationEnabled,
   validateAuthCookies
 } from "@/lib/auth";
@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const loginUrl = request.nextUrl.clone();
-  loginUrl.pathname = getLoginPathForMode(
+  loginUrl.pathname = getDefaultLoginPathForMode(
     getTenantById(tenantCookie)?.profile ?? DEFAULT_AUTH_MODE
   );
   loginUrl.searchParams.set("next", `${pathname}${search}`);
