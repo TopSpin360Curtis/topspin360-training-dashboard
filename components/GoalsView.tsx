@@ -70,19 +70,37 @@ export default function GoalsView({
   onPlayerContextMenu
 }: GoalsViewProps) {
   const [activeRiskBand, setActiveRiskBand] = useState<RiskBand | null>(null);
-  const teamProgress = getTeamBenchmarkProgress(data, config);
   const playerGoalStats = useMemo(
     () =>
-      players.map((player) => ({
-        player,
-        stats: getPlayerStats(data, player)
-      })),
+      players.map((player) => {
+        const stats = getPlayerStats(data, player);
+
+        return {
+          player,
+          stats,
+          goalRiskBand: getRiskBand(stats.bestRFD)
+        };
+      }),
     [data, players]
+  );
+  const teamProgress = getTeamBenchmarkProgress(data, config);
+  const goalBandCounts = useMemo(
+    () =>
+      teamProgress.bandCounts.map((band) => {
+        const count = playerGoalStats.filter((player) => player.goalRiskBand === band.band).length;
+
+        return {
+          ...band,
+          count,
+          percentage: playerGoalStats.length ? (count / playerGoalStats.length) * 100 : 0
+        };
+      }),
+    [playerGoalStats, teamProgress.bandCounts]
   );
   const filteredPlayerGoalStats = useMemo(
     () =>
       activeRiskBand
-        ? playerGoalStats.filter(({ stats }) => stats.riskBand === activeRiskBand)
+        ? playerGoalStats.filter(({ goalRiskBand }) => goalRiskBand === activeRiskBand)
         : playerGoalStats,
     [activeRiskBand, playerGoalStats]
   );
@@ -121,7 +139,7 @@ export default function GoalsView({
             ) : null}
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-4">
-            {teamProgress.bandCounts.map((band) => (
+            {goalBandCounts.map((band) => (
               <button
                 key={band.band}
                 type="button"
@@ -241,7 +259,7 @@ export default function GoalsView({
             )}
           </div>
           <div className="mt-5 grid gap-4">
-            {filteredPlayerGoalStats.map(({ player, stats }) => {
+            {filteredPlayerGoalStats.map(({ player, stats, goalRiskBand }) => {
               const target = config.playerTargets[player];
               const rfdProgress = target ? (stats.bestRFD / target.rfdTarget) * 100 : 0;
               const sessionProgress = target
@@ -262,7 +280,7 @@ export default function GoalsView({
                         >
                           {player}
                         </p>
-                        <RiskBandBadge band={stats.riskBand} compact />
+                        <RiskBandBadge band={goalRiskBand} compact />
                       </div>
                       <p className="mt-1 text-sm text-slate-500">
                         Best {formatNumber(stats.bestRFD)} | Sessions {stats.sessions}
