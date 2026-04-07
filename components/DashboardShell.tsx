@@ -241,7 +241,7 @@ function ReviewPanel({
       </div>
 
       {!isCollapsed ? (
-        <div className="mt-4 flex gap-4 overflow-x-auto pb-1">
+        <div className="mt-4 space-y-3">
         {visibleRows.map((row) => {
           const isExpanded = expandedPlayer === row.player;
 
@@ -251,7 +251,7 @@ function ReviewPanel({
               onClick={() =>
                 setExpandedPlayer((current) => (current === row.player ? null : row.player))
               }
-              className={`min-h-[138px] min-w-[220px] flex-1 rounded-2xl border-l-4 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${toneMap[row.reviewPriority]}`}
+              className={`w-full rounded-2xl border-l-4 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${toneMap[row.reviewPriority]}`}
               onContextMenu={(event) => onPlayerContextMenu?.(row.player, event)}
             >
               <div className="flex items-start justify-between gap-3">
