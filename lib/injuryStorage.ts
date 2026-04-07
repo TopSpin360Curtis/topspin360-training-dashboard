@@ -183,8 +183,8 @@ function mergeInjuryMaps(base: PlayerInjuryMap, custom: PlayerInjuryMap) {
 }
 
 function getDefaultPlayerInjuries(profile: DashboardProfile, namespace?: string): PlayerInjuryMap {
-  if (namespace && namespace !== "tenant-team" && namespace !== "tenant-test") {
-    return {};
+  if (namespace?.startsWith("tenant-")) {
+    return profile === "team" ? TEAM_DEFAULT_INJURIES : TEST_DEFAULT_INJURIES;
   }
 
   if (profile === "team") {
