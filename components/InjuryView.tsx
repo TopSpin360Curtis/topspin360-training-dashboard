@@ -17,6 +17,7 @@ type InjuryViewProps = {
   availablePlayers: string[];
   players: string[];
   data: TrainingSession[];
+  filteredData: TrainingSession[];
   injuries: PlayerInjuryMap;
   teamAverage: number;
   onAddInjuryRequest: (player: string) => void;
@@ -32,6 +33,7 @@ export default function InjuryView({
   availablePlayers,
   players,
   data,
+  filteredData,
   injuries,
   teamAverage,
   onAddInjuryRequest,
@@ -45,8 +47,8 @@ export default function InjuryView({
   const detailRef = useRef<HTMLDivElement | null>(null);
 
   const injuryRows = useMemo(
-    () => getInjuryRegisterRows(players, data, injuries),
-    [data, injuries, players]
+    () => getInjuryRegisterRows(players, filteredData, injuries),
+    [filteredData, injuries, players]
   );
   const latestInjury = injuryRows[0];
   const uniquePlayersImpacted = new Set(injuryRows.map((row) => row.player)).size;
@@ -231,7 +233,16 @@ export default function InjuryView({
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-50/80">
               <tr>
-                {["Player", "Type", "Injury date", "Avg RFD", "Sessions", "Risk Band", "Vs Team"].map(
+                {[
+                  "Player",
+                  "Type",
+                  "Injury date",
+                  "Avg RFD",
+                  "Sessions",
+                  "Most Recent",
+                  "Risk Band",
+                  "Vs Team"
+                ].map(
                   (label) => (
                     <th key={label} className="px-4 py-4 font-semibold text-slate-700">
                       {label}
@@ -296,6 +307,20 @@ export default function InjuryView({
                           <p className="text-xs text-slate-500">0 training sessions recorded</p>
                         ) : null}
                       </div>
+                    </td>
+                    <td className="px-4 py-4 text-slate-700">
+                      {row.latestSessionDate ? (
+                        <div className="space-y-1">
+                          <p className="font-medium text-brand-ink">
+                            {formatNumber(row.latestBestRFD ?? 0)}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {formatDate(row.latestSessionDate)}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-slate-400">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-4">
                       {row.hasTrainingData ? (

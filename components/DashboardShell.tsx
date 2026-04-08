@@ -1473,6 +1473,7 @@ export default function DashboardShell({
               availablePlayers={profilePlayers}
               players={profilePlayers}
               data={data}
+              filteredData={filteredData}
               injuries={playerInjuries}
               teamAverage={teamAverage}
               onAddInjuryRequest={handleOpenInjuryModal}

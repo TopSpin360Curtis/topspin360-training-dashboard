@@ -56,6 +56,8 @@ export type InjuryRegisterRow = {
   stats: PlayerStats;
   hasTrainingData: boolean;
   sessionsLabel: string;
+  latestSessionDate: string | null;
+  latestBestRFD: number | null;
 };
 
 export type InjuryDetailSession = TrainingSession & {

@@ -804,6 +804,9 @@ export function getInjuryRegisterRows(
       const entries = injuries[player] ?? [];
       const stats = getPlayerStats(data, player);
       const hasTrainingData = stats.sessions > 0;
+      const latestSession = sortSessionsByDate(
+        data.filter((session) => session.player === player)
+      ).at(-1);
 
       return entries.map((injury, index) => ({
         id: `${player}-${injury.date}-${injury.type}-${index}`,
@@ -811,7 +814,9 @@ export function getInjuryRegisterRows(
         injury,
         stats,
         hasTrainingData,
-        sessionsLabel: hasTrainingData ? `${stats.sessions}` : "0 training sessions recorded"
+        sessionsLabel: hasTrainingData ? `${stats.sessions}` : "0 training sessions recorded",
+        latestSessionDate: latestSession?.date ?? null,
+        latestBestRFD: latestSession?.bestRfd ?? null
       }));
     })
     .sort((left, right) => right.injury.date.localeCompare(left.injury.date));
