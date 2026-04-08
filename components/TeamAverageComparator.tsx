@@ -13,6 +13,7 @@ export default function TeamAverageComparator({
   deltaPct,
   compact = false
 }: TeamAverageComparatorProps) {
+  const isNeutral = Math.abs(delta) < 0.005 && Math.abs(deltaPct) < 0.005;
   const tone =
     delta > 0
       ? "text-emerald-700"
@@ -26,6 +27,10 @@ export default function TeamAverageComparator({
         {formatSignedPercent(deltaPct)} vs team
       </span>
     );
+  }
+
+  if (isNeutral) {
+    return null;
   }
 
   return (
