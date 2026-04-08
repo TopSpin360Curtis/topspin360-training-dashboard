@@ -81,7 +81,7 @@ export default function Leaderboard({
       label: "Trend",
       key: "trendDelta",
       className: "hidden md:table-cell",
-      description: "Current half vs prior half"
+      description: "Last session vs prior"
     }
   ];
 

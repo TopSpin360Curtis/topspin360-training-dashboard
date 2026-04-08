@@ -14,7 +14,7 @@ import AsymmetryIndicator from "@/components/AsymmetryIndicator";
 import RiskBandBadge from "@/components/RiskBandBadge";
 import TeamAverageComparator from "@/components/TeamAverageComparator";
 import TrendStatusChip from "@/components/TrendStatusChip";
-import { formatDate, formatNumber } from "@/lib/dataUtils";
+import { formatDate, formatNumber, getTodayIso } from "@/lib/dataUtils";
 import type { PlayerStats, RiskBand, TrainingSession } from "@/lib/types";
 
 type PlayerQuickViewDrawerProps = {
@@ -86,17 +86,7 @@ export default function PlayerQuickViewDrawer({
       };
     }
 
-    const latestSessionDate = trendSessions[trendSessions.length - 1]?.date;
-
-    if (!latestSessionDate) {
-      return {
-        sessionCount: 0,
-        averageRfd: null as number | null,
-        peakRfd: null as number | null
-      };
-    }
-
-    const cutoff = new Date(`${latestSessionDate}T12:00:00`);
+    const cutoff = new Date(`${getTodayIso()}T12:00:00`);
     cutoff.setDate(cutoff.getDate() - 60);
 
     const windowSessions = trendSessions.filter((session) => {
@@ -285,12 +275,12 @@ export default function PlayerQuickViewDrawer({
                 <div className="mt-5 rounded-2xl bg-white p-4 shadow-sm">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-blue/70">
-                        Past 60 Days
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Based on the player&apos;s latest session in the current view
-                      </p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-blue/70">
+                      Past 60 Days
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Based on the actual last 60 calendar days in the current view
+                    </p>
                     </div>
                   </div>
                   <div className="mt-4 grid gap-4 md:grid-cols-3">

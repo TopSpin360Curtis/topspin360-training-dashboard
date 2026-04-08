@@ -551,20 +551,7 @@ function getTrendDeltaForSessions(sessions: TrainingSession[]) {
   }
 
   const ordered = sortSessionsByDate(sessions);
-  const pivot = Math.floor(ordered.length / 2);
-  const previous = ordered.slice(0, pivot);
-  const current = ordered.slice(pivot);
-
-  if (!previous.length || !current.length) {
-    return ordered[ordered.length - 1].bestRfd - ordered[ordered.length - 2].bestRfd;
-  }
-
-  const previousAvg =
-    previous.reduce((sum, session) => sum + session.bestRfd, 0) / previous.length;
-  const currentAvg =
-    current.reduce((sum, session) => sum + session.bestRfd, 0) / current.length;
-
-  return currentAvg - previousAvg;
+  return ordered[ordered.length - 1].bestRfd - ordered[ordered.length - 2].bestRfd;
 }
 
 export function getTeamAverageRFD(data: TrainingSession[]) {
