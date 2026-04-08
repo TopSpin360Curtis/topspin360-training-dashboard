@@ -14,6 +14,7 @@ import {
   YAxis
 } from "recharts";
 import AlertsModal from "@/components/AlertsModal";
+import AdminAccessModal from "@/components/AdminAccessModal";
 import CoachNotesPanel from "@/components/CoachNotesPanel";
 import CompareView from "@/components/CompareView";
 import DayOfWeekView from "@/components/DayOfWeekView";
@@ -329,6 +330,7 @@ export default function DashboardShell({
   const [selectedDayPlayer, setSelectedDayPlayer] = useState("");
   const [alerts, setAlerts] = useState<PlayerAlert[]>([]);
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [playerInjuries, setPlayerInjuries] = useState<PlayerInjuryMap>({});
   const [contextMenu, setContextMenu] = useState<{
     player: string;
@@ -352,6 +354,8 @@ export default function DashboardShell({
   const [profileReady, setProfileReady] = useState(false);
   const storageNamespace = authenticatedTenant ? `tenant-${authenticatedTenant.id}` : activeProfile;
   const activeDatasetLabel = authenticatedTenant?.label ?? PROFILE_LABELS[activeProfile];
+  const canExport = authenticatedTenant?.canExport ?? true;
+  const isAdmin = authenticatedTenant?.role === "admin";
 
   useEffect(() => {
     if (modeLocked && authenticatedTenant && activeProfile !== authenticatedTenant.profile) {
@@ -900,10 +904,18 @@ export default function DashboardShell({
   }
 
   function handleExportCsv() {
+    if (!canExport) {
+      return;
+    }
+
     exportToCSV(filteredData);
   }
 
   async function handleExportPdf() {
+    if (!canExport) {
+      return;
+    }
+
     const tabTargets: Record<TabKey, HTMLElement | null> = {
       overview: overviewExportRef.current,
       trends: trendsExportRef.current,
@@ -1055,10 +1067,13 @@ export default function DashboardShell({
         onExportPdf={() => void handleExportPdf()}
         onSyncSheets={handleSyncSheets}
         onShowAlerts={() => setIsAlertsOpen(true)}
+        onShowAdmin={() => setIsAdminOpen(true)}
         isSyncing={isSyncingSheets}
         isExportingPdf={isExportingPdf}
         alertCount={alerts.length}
         canLogout={passwordProtectionEnabled}
+        canExport={canExport}
+        isAdmin={isAdmin}
       />
       <FilterBar
         players={players}
@@ -1421,6 +1436,7 @@ export default function DashboardShell({
               onExportCsv={handleExportCsv}
               teamAverage={teamAverage}
               teamAverageChangePct={displayedChangePct}
+              canExport={canExport}
               onPlayerClick={handleOpenPlayerQuickView}
               onPlayerContextMenu={handlePlayerContextMenu}
             />
@@ -1473,6 +1489,10 @@ export default function DashboardShell({
         onClose={() => setIsAlertsOpen(false)}
         onViewTrends={handleViewAlertTrends}
         onAddNote={handleAddAlertNote}
+      />
+      <AdminAccessModal
+        open={isAdminOpen}
+        onClose={() => setIsAdminOpen(false)}
       />
 
       {contextMenu ? (

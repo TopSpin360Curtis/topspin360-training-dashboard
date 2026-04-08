@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import type { DashboardProfile } from "@/lib/types";
 import {
   AUTH_COOKIE_NAME,
@@ -8,8 +8,9 @@ import {
   isAuthenticationEnabled,
   isDashboardMode
 } from "@/lib/auth";
+import { appendLoginAuditEvent } from "@/lib/loginAudit";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   if (!isAuthenticationEnabled()) {
     return NextResponse.json(
       { error: "Dashboard authentication is not configured." },
@@ -53,6 +54,17 @@ export async function POST(request: Request) {
   }
 
   const response = NextResponse.json({ success: true });
+
+  try {
+    await appendLoginAuditEvent({
+      tenant: authenticated.tenant,
+      ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined,
+      userAgent: request.headers.get("user-agent") || undefined
+    });
+  } catch {
+    // Audit logging is best-effort so log capture never blocks a successful sign-in.
+  }
+
   response.cookies.set({
     name: AUTH_COOKIE_NAME,
     value: authenticated.authToken,

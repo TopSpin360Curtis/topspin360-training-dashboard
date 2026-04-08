@@ -1,4 +1,4 @@
-import type { DashboardProfile, DashboardTenant } from "@/lib/types";
+import type { DashboardProfile, DashboardRole, DashboardTenant } from "@/lib/types";
 
 export const AUTH_COOKIE_NAME = "topspin360-auth";
 export const AUTH_MODE_COOKIE_NAME = "topspin360-mode";
@@ -24,6 +24,8 @@ type RawDashboardTenantConfig = {
   range?: unknown;
   publicSheetId?: unknown;
   apiKey?: unknown;
+  role?: unknown;
+  canExport?: unknown;
 };
 
 function normalizeText(value: string) {
@@ -46,6 +48,10 @@ function isValidProfile(value: unknown): value is DashboardProfile {
   return value === "team" || value === "test";
 }
 
+function isValidRole(value: unknown): value is DashboardRole {
+  return value === "admin" || value === "member";
+}
+
 function parseTenantConfig(value: RawDashboardTenantConfig): DashboardTenantConfig | null {
   if (
     typeof value.id !== "string" ||
@@ -61,6 +67,8 @@ function parseTenantConfig(value: RawDashboardTenantConfig): DashboardTenantConf
   const label = normalizeText(value.label);
   const username = normalizeUsername(value.username);
   const password = normalizeText(value.password);
+  const role = isValidRole(value.role) ? value.role : "member";
+  const canExport = typeof value.canExport === "boolean" ? value.canExport : true;
 
   if (!id || !label || !username || !password) {
     return null;
@@ -72,6 +80,8 @@ function parseTenantConfig(value: RawDashboardTenantConfig): DashboardTenantConf
     username,
     password,
     profile: value.profile,
+    role,
+    canExport,
     sheetId: coerceOptionalString(value.sheetId),
     range: coerceOptionalString(value.range),
     publicSheetId: coerceOptionalString(value.publicSheetId),
@@ -93,6 +103,8 @@ function getFallbackTenantConfigs(): DashboardTenantConfig[] {
       username: "team",
       password: sharedPassword,
       profile: "team",
+      role: "member",
+      canExport: true,
       sheetId: process.env.GOOGLE_SHEET_ID?.trim(),
       range: process.env.GOOGLE_SHEET_RANGE?.trim(),
       publicSheetId: process.env.NEXT_PUBLIC_SHEET_ID?.trim(),
@@ -104,6 +116,8 @@ function getFallbackTenantConfigs(): DashboardTenantConfig[] {
       username: "test",
       password: sharedPassword,
       profile: "test",
+      role: "member",
+      canExport: true,
       sheetId: process.env.TEST_GOOGLE_SHEET_ID?.trim(),
       range: process.env.TEST_GOOGLE_SHEET_RANGE?.trim(),
       publicSheetId: process.env.NEXT_PUBLIC_TEST_SHEET_ID?.trim(),
@@ -194,6 +208,27 @@ export function getTenantConfigById(id: string | null | undefined): DashboardTen
   }
 
   return getTenantConfigsFromEnv().find((entry) => entry.id === normalizeTenantId(id)) ?? null;
+}
+
+function isSameTenantScope(left: DashboardTenantConfig, right: DashboardTenantConfig) {
+  return (
+    left.profile === right.profile &&
+    (left.sheetId ?? "") === (right.sheetId ?? "") &&
+    (left.range ?? "") === (right.range ?? "") &&
+    (left.publicSheetId ?? "") === (right.publicSheetId ?? "")
+  );
+}
+
+export function getTenantsForScope(id: string | null | undefined): DashboardTenant[] {
+  const current = getTenantConfigById(id);
+
+  if (!current) {
+    return [];
+  }
+
+  return getTenantConfigsFromEnv()
+    .filter((entry) => isSameTenantScope(entry, current))
+    .map(({ password: _password, ...tenant }) => tenant);
 }
 
 export function isAuthenticationEnabled() {

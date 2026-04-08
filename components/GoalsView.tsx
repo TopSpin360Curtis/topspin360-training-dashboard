@@ -26,6 +26,7 @@ type GoalsViewProps = {
   onExportCsv: () => void;
   teamAverage: number;
   teamAverageChangePct: number;
+  canExport?: boolean;
   onPlayerClick?: (player: string) => void;
   onPlayerContextMenu?: (player: string, event: MouseEvent<HTMLElement>) => void;
 };
@@ -70,6 +71,7 @@ export default function GoalsView({
   onExportCsv,
   teamAverage,
   teamAverageChangePct,
+  canExport = true,
   onPlayerClick,
   onPlayerContextMenu
 }: GoalsViewProps) {
@@ -419,13 +421,19 @@ export default function GoalsView({
           Share reports with staff
         </h3>
         <div className="mt-5 flex flex-wrap gap-3">
-          <ExportButton label="Export PDF" onClick={onExportPdf} />
+          <ExportButton label="Export PDF" onClick={onExportPdf} disabled={!canExport} />
           <ExportButton
             label="Export CSV"
             onClick={onExportCsv}
             variant="secondary"
+            disabled={!canExport}
           />
         </div>
+        {!canExport ? (
+          <p className="mt-4 text-sm text-slate-500">
+            Export access is disabled for this account.
+          </p>
+        ) : null}
       </article>
     </div>
   );

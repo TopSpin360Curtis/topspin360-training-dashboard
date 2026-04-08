@@ -16,10 +16,13 @@ type NavbarProps = {
   onExportPdf: () => void;
   onSyncSheets: () => void;
   onShowAlerts: () => void;
+  onShowAdmin?: () => void;
   isSyncing: boolean;
   isExportingPdf?: boolean;
   alertCount?: number;
   canLogout?: boolean;
+  canExport?: boolean;
+  isAdmin?: boolean;
 };
 
 export default function Navbar({
@@ -34,10 +37,13 @@ export default function Navbar({
   onExportPdf,
   onSyncSheets,
   onShowAlerts,
+  onShowAdmin,
   isSyncing,
   isExportingPdf = false,
   alertCount = 0,
-  canLogout = false
+  canLogout = false,
+  canExport = true,
+  isAdmin = false
 }: NavbarProps) {
   const router = useRouter();
   const headerRef = useRef<HTMLElement | null>(null);
@@ -200,6 +206,16 @@ export default function Navbar({
             ) : null}
           </button>
 
+          {isAdmin ? (
+            <button
+              type="button"
+              onClick={onShowAdmin}
+              className="min-h-11 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:text-brand-ink"
+            >
+              Admin
+            </button>
+          ) : null}
+
           <div className="relative sm:hidden">
             <button
               type="button"
@@ -265,26 +281,30 @@ export default function Navbar({
                 >
                   {isSyncing ? "Syncing..." : "Sync Sheets"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onExportCsv();
-                  }}
-                  className="min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Export CSV
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onExportPdf();
-                  }}
-                  className="min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  {isExportingPdf ? "Exporting PDF..." : "Export PDF"}
-                </button>
+                {canExport ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onExportCsv();
+                      }}
+                      className="min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Export CSV
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onExportPdf();
+                      }}
+                      className="min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      {isExportingPdf ? "Exporting PDF..." : "Export PDF"}
+                    </button>
+                  </>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -309,48 +329,50 @@ export default function Navbar({
               {isSyncing ? "Syncing..." : "Sync Sheets"}
             </button>
 
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setExportMenuOpen((current) => !current)}
-                className="min-h-11 rounded-full bg-brand-orange px-4 py-2 text-sm font-semibold text-white transition hover:brightness-95"
-              >
-                Export
-              </button>
+            {canExport ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setExportMenuOpen((current) => !current)}
+                  className="min-h-11 rounded-full bg-brand-orange px-4 py-2 text-sm font-semibold text-white transition hover:brightness-95"
+                >
+                  Export
+                </button>
 
-              {exportMenuOpen ? (
-                <>
-                  <button
-                    type="button"
-                    aria-label="Close export menu"
-                    className="fixed inset-0 z-10 cursor-default"
-                    onClick={() => setExportMenuOpen(false)}
-                  />
-                  <div className="absolute right-0 top-14 z-20 min-w-[180px] rounded-2xl border border-slate-200 bg-white p-2 shadow-soft">
+                {exportMenuOpen ? (
+                  <>
                     <button
                       type="button"
-                      onClick={() => {
-                        setExportMenuOpen(false);
-                        onExportCsv();
-                      }}
-                      className="min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                    >
-                      Export CSV
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setExportMenuOpen(false);
-                        onExportPdf();
-                      }}
-                      className="min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                    >
-                      {isExportingPdf ? "Exporting PDF..." : "Export PDF"}
-                    </button>
-                  </div>
-                </>
-              ) : null}
-            </div>
+                      aria-label="Close export menu"
+                      className="fixed inset-0 z-10 cursor-default"
+                      onClick={() => setExportMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-14 z-20 min-w-[180px] rounded-2xl border border-slate-200 bg-white p-2 shadow-soft">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExportMenuOpen(false);
+                          onExportCsv();
+                        }}
+                        className="min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Export CSV
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExportMenuOpen(false);
+                          onExportPdf();
+                        }}
+                        className="min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        {isExportingPdf ? "Exporting PDF..." : "Export PDF"}
+                      </button>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

@@ -9,12 +9,27 @@ export type TrainingSession = {
 };
 
 export type DashboardProfile = "team" | "test";
+export type DashboardRole = "admin" | "member";
 
 export type DashboardTenant = {
   id: string;
   label: string;
   username: string;
   profile: DashboardProfile;
+  role: DashboardRole;
+  canExport: boolean;
+};
+
+export type LoginAuditEvent = {
+  timestamp: string;
+  username: string;
+  tenantId: string;
+  tenantLabel: string;
+  profile: DashboardProfile;
+  role: DashboardRole;
+  canExport: boolean;
+  ipAddress?: string;
+  userAgent?: string;
 };
 
 export type RiskBand = "high" | "moderate" | "lower" | "lowest";
