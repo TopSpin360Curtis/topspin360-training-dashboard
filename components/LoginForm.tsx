@@ -7,11 +7,13 @@ import type { DashboardProfile } from "@/lib/types";
 export default function LoginForm({
   nextPath,
   mode,
-  tenantLabel
+  tenantLabel,
+  tenantId
 }: {
   nextPath: string;
   mode: DashboardProfile;
   tenantLabel?: string;
+  tenantId?: string;
 }) {
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -28,7 +30,7 @@ export default function LoginForm({
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ username, password, mode })
+      body: JSON.stringify({ username, password, mode, tenantId })
     });
 
     if (!response.ok) {

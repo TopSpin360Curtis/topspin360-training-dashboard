@@ -61,7 +61,12 @@ export default function ModeLoginScreen({ mode, nextPath, tenant = null }: ModeL
 
         <p className="mt-5 text-sm leading-6 text-slate-600">{meta.description}</p>
 
-        <LoginForm nextPath={nextPath} mode={mode} tenantLabel={badgeLabel} />
+        <LoginForm
+          nextPath={nextPath}
+          mode={mode}
+          tenantLabel={badgeLabel}
+          tenantId={tenant?.id}
+        />
       </section>
     </main>
   );

@@ -253,14 +253,17 @@ async function buildTenantAuthToken(tenant: DashboardTenantConfig) {
 export async function authenticateTenantLogin({
   username,
   password,
-  mode
+  mode,
+  tenantId
 }: {
   username: string;
   password: string;
   mode?: DashboardProfile | null;
+  tenantId?: string | null;
 }) {
   const normalizedUsername = normalizeUsername(username);
   const normalizedPassword = normalizeText(password);
+  const normalizedTenantId = tenantId ? normalizeTenantId(tenantId) : null;
 
   if (!normalizedUsername || !normalizedPassword) {
     return null;
@@ -270,7 +273,8 @@ export async function authenticateTenantLogin({
     (entry) =>
       entry.username === normalizedUsername &&
       entry.password === normalizedPassword &&
-      (!mode || entry.profile === mode)
+      (!mode || entry.profile === mode) &&
+      (!normalizedTenantId || entry.id === normalizedTenantId)
   );
 
   if (!tenant) {
