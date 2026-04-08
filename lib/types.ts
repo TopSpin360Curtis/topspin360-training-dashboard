@@ -177,4 +177,5 @@ export type DataSourceMeta = {
   profile?: DashboardProfile;
   message?: string;
   updatedAt?: string;
+  unclaimedSessions?: number;
 };

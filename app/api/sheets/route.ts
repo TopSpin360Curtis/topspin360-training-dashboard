@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
         data: result.data.length ? result.data : sampleTrainingData,
         profile,
         source: result.data.length ? "sheets" : "sample",
+        unclaimedSessions: result.unclaimedSessions,
         message: result.data.length
           ? `Loaded ${profileLabel} Data`
           : result.valueRowCount > 0
@@ -72,13 +73,14 @@ export async function GET(request: NextRequest) {
     }
 
     if (publicSheetId && apiKey) {
-      const data = await fetchGoogleSheetData(publicSheetId, apiKey);
+      const result = await fetchGoogleSheetData(publicSheetId, apiKey);
 
       return NextResponse.json({
-        data: data.length ? data : sampleTrainingData,
+        data: result.data.length ? result.data : sampleTrainingData,
         profile,
-        source: data.length ? "sheets" : "sample",
-        message: data.length
+        source: result.data.length ? "sheets" : "sample",
+        unclaimedSessions: result.unclaimedSessions,
+        message: result.data.length
           ? `Loaded ${profileLabel} Data`
           : `The ${profileLabel} Google Sheet was empty, so sample data is being shown.`
       });
@@ -104,6 +106,7 @@ export async function GET(request: NextRequest) {
         data: sampleTrainingData,
         profile,
         source: "sample",
+        unclaimedSessions: 0,
         message: `${message} CSV upload remains available as a fallback.`
       },
       { status: 500 }

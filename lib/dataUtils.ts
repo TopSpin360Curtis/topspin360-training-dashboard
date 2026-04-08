@@ -295,6 +295,23 @@ export function isDisplayablePlayerName(value: string) {
   return parts.every((part) => /^[A-Za-z][A-Za-z'’-]*$/.test(part) && part.length >= 2);
 }
 
+export function countUnclaimedTrainingRows(rows: Array<Record<string, unknown>>) {
+  return rows.reduce((total, row) => {
+    const normalizedEntries = Object.fromEntries(
+      Object.entries(row).map(([key, value]) => [normalizeKey(key), value])
+    );
+    const player = normalizeWhitespace(
+      String(normalizedEntries.player ?? normalizedEntries.athlete ?? "")
+    );
+
+    if (!player) {
+      return total;
+    }
+
+    return isDisplayablePlayerName(player) ? total : total + 1;
+  }, 0);
+}
+
 export function coerceTrainingSession(
   row: Record<string, unknown>,
   index = 0

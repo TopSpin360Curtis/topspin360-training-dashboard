@@ -31,6 +31,7 @@ import TrendCharts from "@/components/TrendCharts";
 import {
   buildDefaultBenchmarkConfig,
   coerceTrainingSession,
+  countUnclaimedTrainingRows,
   exportToCSV,
   filterByDateRange,
   filterByDayOfWeek,
@@ -55,7 +56,6 @@ import {
   getTeamAverageRFD,
   getTeamLeaderboard,
   getTopPerformers,
-  getTotalRevolutions,
   getUniquePlayers
 } from "@/lib/dataUtils";
 import { exportElementToPdf } from "@/lib/exportPdf";
@@ -91,7 +91,7 @@ type CohortKey =
   | "below-average"
   | "high-frequency"
   | "low-frequency";
-type DatePreset = "last7" | "last30" | "season";
+type DatePreset = "last7" | "last30" | "season" | "season2024" | "season2023";
 
 const BENCHMARK_STORAGE_KEY = "topspin360-benchmarks";
 const DASHBOARD_DATA_STORAGE_KEY = "topspin360-dashboard-data";
@@ -727,6 +727,7 @@ export default function DashboardShell({
         const cleaned = results.data
           .map((row, index) => coerceTrainingSession(row, index))
           .filter((row): row is TrainingSession => Boolean(row));
+        const unclaimedSessions = countUnclaimedTrainingRows(results.data);
 
         if (cleaned.length) {
           setData(cleaned);
@@ -739,8 +740,9 @@ export default function DashboardShell({
           setSourceMeta({
             source: "csv",
             profile: activeProfile,
-            message: `Loaded ${cleaned.length} valid rows into ${activeDatasetLabel} from ${file.name}. Non-name labels and invalid player IDs were excluded.`,
-            updatedAt: new Date().toISOString()
+            message: `Loaded ${cleaned.length} valid rows into ${activeDatasetLabel} from ${file.name}.`,
+            updatedAt: new Date().toISOString(),
+            unclaimedSessions
           });
         }
       }
@@ -771,6 +773,7 @@ export default function DashboardShell({
         profile?: DashboardProfile;
         message?: string;
         error?: string;
+        unclaimedSessions?: number;
       };
 
       if (!response.ok) {
@@ -791,7 +794,8 @@ export default function DashboardShell({
           message:
             payload.message ??
             `Synced ${activeDatasetLabel} Google Sheets manually. Only full-name players are included.`,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          unclaimedSessions: payload.unclaimedSessions ?? 0
         });
       } else {
         setSourceMeta({
@@ -800,7 +804,8 @@ export default function DashboardShell({
           message:
             payload.message ??
             "Manual sheet sync returned no valid player rows, so the current dataset was left unchanged.",
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          unclaimedSessions: payload.unclaimedSessions ?? 0
         });
       }
     } catch (error) {
@@ -811,7 +816,8 @@ export default function DashboardShell({
           error instanceof Error
             ? error.message
             : "Manual Sheets sync failed. The current dataset was left unchanged.",
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        unclaimedSessions: sourceMeta.unclaimedSessions ?? 0
       });
     } finally {
       setIsSyncingSheets(false);
@@ -837,6 +843,18 @@ export default function DashboardShell({
     if (preset === "season") {
       setStartDate("2025-03-01");
       setEndDate("2026-03-31");
+      return;
+    }
+
+    if (preset === "season2024") {
+      setStartDate("2024-03-01");
+      setEndDate("2025-03-31");
+      return;
+    }
+
+    if (preset === "season2023") {
+      setStartDate("2023-03-01");
+      setEndDate("2024-03-31");
       return;
     }
 
@@ -1155,20 +1173,13 @@ export default function DashboardShell({
                 }
               />
               <StatCard
-                label="Total Revolutions"
-                value={String(getTotalRevolutions(filteredData))}
-                subtext="Calculated as CW + CCW attempts per session"
+                label="Sessions in Period"
+                value={String(filteredData.length)}
+                subtext="Training sessions in the current filtered range"
                 footer={
-                  <div className="flex flex-wrap gap-2">
-                    {bandDistribution.map((band) => (
-                      <div
-                        key={band.band}
-                        className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
-                      >
-                        {band.label}: {band.count}
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-sm font-semibold text-slate-600">
+                    Sessions unclaimed: {sourceMeta.unclaimedSessions ?? 0}
+                  </p>
                 }
               />
             </div>
@@ -1416,6 +1427,9 @@ export default function DashboardShell({
                 "Track team readiness, compare players, and monitor benchmark progress in one dashboard."}
             </p>
           </div>
+          <p className="mt-3 text-sm font-medium text-slate-500">
+            Sessions unclaimed: {sourceMeta.unclaimedSessions ?? 0}
+          </p>
         </section>
       </main>
 

@@ -20,7 +20,7 @@ type FilterBarProps = {
   daysOfWeek: string[];
   onDayToggle: (value: string) => void;
   onClearDays: () => void;
-  onApplyDatePreset: (preset: "last7" | "last30" | "season") => void;
+  onApplyDatePreset: (preset: "last7" | "last30" | "season" | "season2024" | "season2023") => void;
   onCsvUpload: (file: File) => void;
   onPlayerContextMenu?: (player: string, event: MouseEvent<HTMLElement>) => void;
 };
@@ -175,7 +175,21 @@ export default function FilterBar({
                   onClick={() => onApplyDatePreset("season")}
                   className="min-h-11 rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
                 >
-                  Current season
+                  2025 season
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onApplyDatePreset("season2024")}
+                  className="min-h-11 rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
+                >
+                  2024 season
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onApplyDatePreset("season2023")}
+                  className="min-h-11 rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
+                >
+                  2023 season
                 </button>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { coerceTrainingSession } from "@/lib/dataUtils";
+import { coerceTrainingSession, countUnclaimedTrainingRows } from "@/lib/dataUtils";
 import type { TrainingSession } from "@/lib/types";
 
 type SheetsApiResponse = {
@@ -23,6 +23,7 @@ export type SheetParseResult = {
   data: TrainingSession[];
   headerRow: string[];
   valueRowCount: number;
+  unclaimedSessions: number;
 };
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -107,18 +108,13 @@ export function getServiceAccountCredentialsFromEnv():
 export async function fetchGoogleSheetData(
   sheetId: string,
   apiKey: string
-): Promise<TrainingSession[]> {
+): Promise<SheetParseResult> {
   const title = await getFirstSheetTitle(sheetId, apiKey);
   const range = encodeURIComponent(`${title}!A:F`);
   const valuesUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
   const payload = await fetchJson<SheetsApiResponse>(valuesUrl);
-  const [headerRow, ...valueRows] = payload.values ?? [];
 
-  if (!headerRow?.length) {
-    return [];
-  }
-
-  return parseSheetValues(payload.values ?? []).data;
+  return parseSheetValues(payload.values ?? []);
 }
 
 export async function fetchPrivateGoogleSheetData(
@@ -158,23 +154,25 @@ export function parseSheetValues(values: string[][]): SheetParseResult {
     return {
       data: [],
       headerRow: [],
-      valueRowCount: 0
+      valueRowCount: 0,
+      unclaimedSessions: 0
     };
   }
 
-  const data = valueRows
-    .map((row, index) => {
-      const record = Object.fromEntries(
-        headerRow.map((header, headerIndex) => [header, row[headerIndex] ?? ""])
-      );
+  const records = valueRows.map((row) =>
+    Object.fromEntries(
+      headerRow.map((header, headerIndex) => [header, row[headerIndex] ?? ""])
+    )
+  );
 
-      return coerceTrainingSession(record, index);
-    })
+  const data = records
+    .map((record, index) => coerceTrainingSession(record, index))
     .filter((row): row is TrainingSession => Boolean(row));
 
   return {
     data,
     headerRow,
-    valueRowCount: valueRows.length
+    valueRowCount: valueRows.length,
+    unclaimedSessions: countUnclaimedTrainingRows(records)
   };
 }
