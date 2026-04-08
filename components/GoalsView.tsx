@@ -76,18 +76,20 @@ export default function GoalsView({
   onPlayerContextMenu
 }: GoalsViewProps) {
   const [activeRiskBand, setActiveRiskBand] = useState<RiskBand | null>(null);
-  const [riskBandMetric, setRiskBandMetric] = useState<"avg" | "best">("avg");
+  const [riskBandMetric, setRiskBandMetric] = useState<"avg" | "best" | "recent">("avg");
   const playerGoalStats = useMemo(
     () =>
       players.map((player) => {
         const stats = getPlayerStats(data, player);
+        const activity = getPlayerActivitySnapshot(data, player);
 
         return {
           player,
           stats,
           averageRiskBand: getRiskBand(stats.avgRFD),
           bestRiskBand: getRiskBand(stats.bestRFD),
-          activity: getPlayerActivitySnapshot(data, player)
+          recentRiskBand: getRiskBand(activity.latestBestRFD ?? 0),
+          activity
         };
       }),
     [data, players]
@@ -96,7 +98,11 @@ export default function GoalsView({
   const goalBandCounts = useMemo(
     () => {
       const getBand = (player: (typeof playerGoalStats)[number]) =>
-        riskBandMetric === "avg" ? player.averageRiskBand : player.bestRiskBand;
+        riskBandMetric === "avg"
+          ? player.averageRiskBand
+          : riskBandMetric === "best"
+            ? player.bestRiskBand
+            : player.recentRiskBand;
 
       return teamProgress.bandCounts.map((band) => {
         const count = playerGoalStats.filter((player) => getBand(player) === band.band).length;
@@ -113,7 +119,11 @@ export default function GoalsView({
   const filteredPlayerGoalStats = useMemo(
     () => {
       const getBand = (player: (typeof playerGoalStats)[number]) =>
-        riskBandMetric === "avg" ? player.averageRiskBand : player.bestRiskBand;
+        riskBandMetric === "avg"
+          ? player.averageRiskBand
+          : riskBandMetric === "best"
+            ? player.bestRiskBand
+            : player.recentRiskBand;
 
       return activeRiskBand
         ? playerGoalStats.filter((player) => getBand(player) === activeRiskBand)
@@ -147,19 +157,27 @@ export default function GoalsView({
                 Risk Band Distribution
               </p>
               <p className="mt-2 text-sm text-slate-500">
-                Based on {riskBandMetric === "avg" ? "Average RFD" : "Best RFD"}
+                Based on{" "}
+                {riskBandMetric === "avg"
+                  ? "Average RFD"
+                  : riskBandMetric === "best"
+                    ? "Best RFD"
+                    : "Most Recent RFD"}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-slate-100 p-1">
                 {[
                   { label: "Average RFD", value: "avg" },
-                  { label: "Best RFD", value: "best" }
+                  { label: "Best RFD", value: "best" },
+                  { label: "Most Recent", value: "recent" }
                 ].map((option) => (
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => setRiskBandMetric(option.value as "avg" | "best")}
+                    onClick={() =>
+                      setRiskBandMetric(option.value as "avg" | "best" | "recent")
+                    }
                     className={`min-h-10 rounded-full px-4 py-2 text-sm font-semibold transition ${
                       riskBandMetric === option.value
                         ? "bg-white text-brand-blue shadow-sm"
@@ -302,10 +320,28 @@ export default function GoalsView({
             )}
           </div>
           <div className="mt-5 grid gap-4">
-            {filteredPlayerGoalStats.map(({ player, stats, averageRiskBand, bestRiskBand, activity }) => {
-              const activeBand = riskBandMetric === "avg" ? averageRiskBand : bestRiskBand;
+            {filteredPlayerGoalStats.map(
+              ({ player, stats, averageRiskBand, bestRiskBand, recentRiskBand, activity }) => {
+              const activeBand =
+                riskBandMetric === "avg"
+                  ? averageRiskBand
+                  : riskBandMetric === "best"
+                    ? bestRiskBand
+                    : recentRiskBand;
+              const activeRfdValue =
+                riskBandMetric === "avg"
+                  ? stats.avgRFD
+                  : riskBandMetric === "best"
+                    ? stats.bestRFD
+                    : activity.latestBestRFD ?? 0;
+              const activeRfdLabel =
+                riskBandMetric === "avg"
+                  ? "Average"
+                  : riskBandMetric === "best"
+                    ? "Best"
+                    : "Most recent";
               const target = config.playerTargets[player];
-              const rfdProgress = target ? (stats.bestRFD / target.rfdTarget) * 100 : 0;
+              const rfdProgress = target ? (activeRfdValue / target.rfdTarget) * 100 : 0;
               const sessionProgress = target
                 ? (stats.sessions / target.sessionTarget) * 100
                 : 0;
@@ -329,22 +365,24 @@ export default function GoalsView({
                         <RiskBandBadge band={activeBand} compact />
                       </div>
                       <p className="mt-1 text-sm text-slate-500">
-                        Best {formatNumber(stats.bestRFD)} | Sessions logged {stats.sessions}
+                        {activeRfdLabel} {formatNumber(activeRfdValue)} | Sessions logged {stats.sessions}
                       </p>
-                      {activity.latestSessionDate ? (
+                      {riskBandMetric === "recent" && activity.latestSessionDate ? (
+                        <p className="mt-2 text-sm text-slate-500">
+                          {formatDate(activity.latestSessionDate)} · {activity.daysSinceLastTraining ?? 0} days since last training session
+                        </p>
+                      ) : activity.latestSessionDate ? (
                         <p className="mt-2 text-sm text-slate-500">
                           Most recent {formatNumber(activity.latestBestRFD ?? 0)} · {formatDate(activity.latestSessionDate)} ·{" "}
                           {activity.daysSinceLastTraining ?? 0} days since last training session
                         </p>
                       ) : (
-                        <p className="mt-2 text-sm text-slate-500">
-                          No recent training session logged
-                        </p>
+                        <p className="mt-2 text-sm text-slate-500">No recent training session logged</p>
                       )}
                       <div className="mt-3">
                         <TeamAverageComparator
-                          delta={stats.avgRFD - teamAverage}
-                          deltaPct={teamAverage ? ((stats.avgRFD - teamAverage) / teamAverage) * 100 : 0}
+                          delta={activeRfdValue - teamAverage}
+                          deltaPct={teamAverage ? ((activeRfdValue - teamAverage) / teamAverage) * 100 : 0}
                         />
                       </div>
                       <div className="mt-4 space-y-3">
