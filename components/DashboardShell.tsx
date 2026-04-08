@@ -98,6 +98,7 @@ type DatePreset = "last7" | "last30" | "season" | "season2024" | "season2023" | 
 const BENCHMARK_STORAGE_KEY = "topspin360-benchmarks";
 const DASHBOARD_DATA_STORAGE_KEY = "topspin360-dashboard-data";
 const DASHBOARD_SOURCE_STORAGE_KEY = "topspin360-dashboard-source";
+const BENCHMARK_RFD_TARGET_MIGRATION_VERSION = "rfd-target-35-v1";
 const PROFILE_LABELS: Record<DashboardProfile, string> = {
   team: "Team",
   test: "Test"
@@ -113,6 +114,10 @@ function getDataStorageKey(namespace: string) {
 
 function getSourceStorageKey(namespace: string) {
   return `${DASHBOARD_SOURCE_STORAGE_KEY}-${namespace}`;
+}
+
+function getBenchmarkMigrationKey(namespace: string) {
+  return `${BENCHMARK_STORAGE_KEY}-${namespace}-migration`;
 }
 
 function getDefaultSourceMeta(profile: DashboardProfile): DataSourceMeta {
@@ -147,6 +152,21 @@ function formatLastUpdated(value?: string) {
     hour: "numeric",
     minute: "2-digit"
   }).format(new Date(value));
+}
+
+function applyDefaultRfdTargets(config: BenchmarkConfig): BenchmarkConfig {
+  return {
+    ...config,
+    playerTargets: Object.fromEntries(
+      Object.entries(config.playerTargets).map(([player, target]) => [
+        player,
+        {
+          ...target,
+          rfdTarget: 35
+        }
+      ])
+    )
+  };
 }
 
 function getDefaultSeasonRange() {
@@ -645,26 +665,49 @@ export default function DashboardShell({
     }
 
     const stored = window.localStorage.getItem(getBenchmarkStorageKey(storageNamespace));
+    const migrationKey = getBenchmarkMigrationKey(storageNamespace);
+    const hasAppliedRfdMigration =
+      window.localStorage.getItem(migrationKey) === BENCHMARK_RFD_TARGET_MIGRATION_VERSION;
     const defaults = buildDefaultBenchmarkConfig(data);
 
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as BenchmarkConfig;
-        setBenchmarkConfig({
+        const nextConfig = {
           thresholds: parsed.thresholds?.length ? parsed.thresholds : defaults.thresholds,
           teamSessionGoal: parsed.teamSessionGoal || defaults.teamSessionGoal,
           playerTargets: {
             ...defaults.playerTargets,
             ...parsed.playerTargets
           }
-        });
+        };
+
+        const migratedConfig = hasAppliedRfdMigration
+          ? nextConfig
+          : applyDefaultRfdTargets(nextConfig);
+
+        if (!hasAppliedRfdMigration) {
+          window.localStorage.setItem(
+            migrationKey,
+            BENCHMARK_RFD_TARGET_MIGRATION_VERSION
+          );
+        }
+
+        setBenchmarkConfig(migratedConfig);
         return;
       } catch {
         window.localStorage.removeItem(getBenchmarkStorageKey(storageNamespace));
       }
     }
 
-    setBenchmarkConfig(defaults);
+    if (!hasAppliedRfdMigration) {
+      window.localStorage.setItem(
+        migrationKey,
+        BENCHMARK_RFD_TARGET_MIGRATION_VERSION
+      );
+    }
+
+    setBenchmarkConfig(applyDefaultRfdTargets(defaults));
   }, [data, storageNamespace]);
 
   useEffect(() => {

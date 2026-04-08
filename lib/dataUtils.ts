@@ -1217,7 +1217,7 @@ export function getDayOfWeekInsights(stats: DayOfWeekStat[]): AutoInsight[] {
 export function getDefaultGoalTarget(player: string, data: TrainingSession[]): GoalTarget {
   const stats = getPlayerStats(data, player);
   return {
-    rfdTarget: Number((stats.bestRFD + 2).toFixed(2)),
+    rfdTarget: 35,
     sessionTarget: Math.max(4, stats.sessions + 2)
   };
 }
