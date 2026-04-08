@@ -31,7 +31,7 @@ import TrendCharts from "@/components/TrendCharts";
 import {
   buildDefaultBenchmarkConfig,
   coerceTrainingSession,
-  countUnclaimedTrainingRows,
+  extractUnclaimedTrainingRows,
   exportToCSV,
   filterByDateRange,
   filterByDayOfWeek,
@@ -387,6 +387,29 @@ export default function DashboardShell({
     [cohortData, selectedPlayers]
   );
   const filteredPlayers = useMemo(() => getUniquePlayers(filteredData), [filteredData]);
+  const filteredUnclaimedSessions = useMemo(() => {
+    const rows = sourceMeta.unclaimedRows ?? [];
+
+    return rows.filter((row) => {
+      if (startDate && row.date && row.date < startDate) {
+        return false;
+      }
+
+      if (endDate && row.date && row.date > endDate) {
+        return false;
+      }
+
+      if (selectedDays.length && row.dayOfWeek && !selectedDays.includes(row.dayOfWeek)) {
+        return false;
+      }
+
+      if ((startDate || endDate) && !row.date) {
+        return false;
+      }
+
+      return true;
+    }).length;
+  }, [endDate, selectedDays, sourceMeta.unclaimedRows, startDate]);
   const trendSelectablePlayers = useMemo(() => {
     const query = trendPlayerSearch.trim().toLowerCase();
 
@@ -727,7 +750,7 @@ export default function DashboardShell({
         const cleaned = results.data
           .map((row, index) => coerceTrainingSession(row, index))
           .filter((row): row is TrainingSession => Boolean(row));
-        const unclaimedSessions = countUnclaimedTrainingRows(results.data);
+        const unclaimedRows = extractUnclaimedTrainingRows(results.data);
 
         if (cleaned.length) {
           setData(cleaned);
@@ -742,7 +765,8 @@ export default function DashboardShell({
             profile: activeProfile,
             message: `Loaded ${cleaned.length} valid rows into ${activeDatasetLabel} from ${file.name}.`,
             updatedAt: new Date().toISOString(),
-            unclaimedSessions
+            unclaimedSessions: unclaimedRows.length,
+            unclaimedRows
           });
         }
       }
@@ -774,6 +798,7 @@ export default function DashboardShell({
         message?: string;
         error?: string;
         unclaimedSessions?: number;
+        unclaimedRows?: DataSourceMeta["unclaimedRows"];
       };
 
       if (!response.ok) {
@@ -795,7 +820,8 @@ export default function DashboardShell({
             payload.message ??
             `Synced ${activeDatasetLabel} Google Sheets manually. Only full-name players are included.`,
           updatedAt: new Date().toISOString(),
-          unclaimedSessions: payload.unclaimedSessions ?? 0
+          unclaimedSessions: payload.unclaimedSessions ?? 0,
+          unclaimedRows: payload.unclaimedRows ?? []
         });
       } else {
         setSourceMeta({
@@ -805,7 +831,8 @@ export default function DashboardShell({
             payload.message ??
             "Manual sheet sync returned no valid player rows, so the current dataset was left unchanged.",
           updatedAt: new Date().toISOString(),
-          unclaimedSessions: payload.unclaimedSessions ?? 0
+          unclaimedSessions: payload.unclaimedSessions ?? 0,
+          unclaimedRows: payload.unclaimedRows ?? []
         });
       }
     } catch (error) {
@@ -817,7 +844,8 @@ export default function DashboardShell({
             ? error.message
             : "Manual Sheets sync failed. The current dataset was left unchanged.",
         updatedAt: new Date().toISOString(),
-        unclaimedSessions: sourceMeta.unclaimedSessions ?? 0
+        unclaimedSessions: sourceMeta.unclaimedSessions ?? 0,
+        unclaimedRows: sourceMeta.unclaimedRows ?? []
       });
     } finally {
       setIsSyncingSheets(false);
@@ -1184,7 +1212,7 @@ export default function DashboardShell({
                 subtext="Training sessions in the current filtered range"
                 footer={
                   <p className="text-sm font-semibold text-slate-600">
-                    Sessions unclaimed: {sourceMeta.unclaimedSessions ?? 0}
+                    Sessions unclaimed: {filteredUnclaimedSessions}
                   </p>
                 }
               />
@@ -1434,7 +1462,7 @@ export default function DashboardShell({
             </p>
           </div>
           <p className="mt-3 text-sm font-medium text-slate-500">
-            Sessions unclaimed: {sourceMeta.unclaimedSessions ?? 0}
+            Sessions unclaimed: {filteredUnclaimedSessions}
           </p>
         </section>
       </main>

@@ -1,6 +1,6 @@
 import { google } from "googleapis";
-import { coerceTrainingSession, countUnclaimedTrainingRows } from "@/lib/dataUtils";
-import type { TrainingSession } from "@/lib/types";
+import { coerceTrainingSession, extractUnclaimedTrainingRows } from "@/lib/dataUtils";
+import type { TrainingSession, UnclaimedSessionMeta } from "@/lib/types";
 
 type SheetsApiResponse = {
   values?: string[][];
@@ -24,6 +24,7 @@ export type SheetParseResult = {
   headerRow: string[];
   valueRowCount: number;
   unclaimedSessions: number;
+  unclaimedRows: UnclaimedSessionMeta[];
 };
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -155,7 +156,8 @@ export function parseSheetValues(values: string[][]): SheetParseResult {
       data: [],
       headerRow: [],
       valueRowCount: 0,
-      unclaimedSessions: 0
+      unclaimedSessions: 0,
+      unclaimedRows: []
     };
   }
 
@@ -165,6 +167,7 @@ export function parseSheetValues(values: string[][]): SheetParseResult {
     )
   );
 
+  const unclaimedRows = extractUnclaimedTrainingRows(records);
   const data = records
     .map((record, index) => coerceTrainingSession(record, index))
     .filter((row): row is TrainingSession => Boolean(row));
@@ -173,6 +176,7 @@ export function parseSheetValues(values: string[][]): SheetParseResult {
     data,
     headerRow,
     valueRowCount: valueRows.length,
-    unclaimedSessions: countUnclaimedTrainingRows(records)
+    unclaimedSessions: unclaimedRows.length,
+    unclaimedRows
   };
 }

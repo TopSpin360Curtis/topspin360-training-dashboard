@@ -174,10 +174,16 @@ export type BenchmarkConfig = {
   playerTargets: Record<string, GoalTarget>;
 };
 
+export type UnclaimedSessionMeta = {
+  date: string | null;
+  dayOfWeek: string | null;
+};
+
 export type DataSourceMeta = {
   source: "sheets" | "csv" | "sample";
   profile?: DashboardProfile;
   message?: string;
   updatedAt?: string;
   unclaimedSessions?: number;
+  unclaimedRows?: UnclaimedSessionMeta[];
 };

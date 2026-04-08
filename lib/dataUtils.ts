@@ -19,7 +19,8 @@ import type {
   PlayerInjuryMap,
   ReviewPriority,
   RiskBand,
-  TrainingSession
+  TrainingSession,
+  UnclaimedSessionMeta
 } from "@/lib/types";
 
 const NUMBER_FORMATTER = new Intl.NumberFormat("en-CA", {
@@ -323,6 +324,12 @@ export function isDisplayablePlayerName(value: string) {
 }
 
 export function countUnclaimedTrainingRows(rows: Array<Record<string, unknown>>) {
+  return extractUnclaimedTrainingRows(rows).length;
+}
+
+export function extractUnclaimedTrainingRows(
+  rows: Array<Record<string, unknown>>
+): UnclaimedSessionMeta[] {
   return rows.reduce((total, row) => {
     const normalizedEntries = Object.fromEntries(
       Object.entries(row).map(([key, value]) => [normalizeKey(key), value])
@@ -335,8 +342,27 @@ export function countUnclaimedTrainingRows(rows: Array<Record<string, unknown>>)
       return total;
     }
 
-    return isDisplayablePlayerName(player) ? total : total + 1;
-  }, 0);
+    if (isDisplayablePlayerName(player)) {
+      return total;
+    }
+
+    const dateRaw = String(normalizedEntries.date ?? "").trim();
+    const parsedDate = parseIsoDate(dateRaw);
+    const dayOfWeek =
+      String(
+        normalizedEntries.dayofweek ??
+          normalizedEntries.day ??
+          normalizedEntries.weekday ??
+          ""
+      ).trim() || (parsedDate ? getDayName(parsedDate) : "");
+
+    total.push({
+      date: parsedDate,
+      dayOfWeek: dayOfWeek || null
+    });
+
+    return total;
+  }, [] as UnclaimedSessionMeta[]);
 }
 
 export function coerceTrainingSession(
