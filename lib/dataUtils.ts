@@ -144,6 +144,14 @@ function getDateDaysBefore(anchor: string, days: number) {
   return date.toISOString().slice(0, 10);
 }
 
+export function getTodayIso() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function formatNumber(value: number) {
   return NUMBER_FORMATTER.format(value);
 }
@@ -233,7 +241,7 @@ export function getPlayerActivitySnapshot(
   );
   const latestSession = sessions.at(-1) ?? null;
   const effectiveReferenceDate =
-    referenceDate || getDateBounds(data).end || latestSession?.date || "";
+    referenceDate || getTodayIso();
 
   return {
     latestSession,
@@ -264,7 +272,7 @@ function getRecentActivityThreshold(data: TrainingSession[]) {
     return "";
   }
 
-  const latestDate = sortSessionsByDate(data).at(-1)?.date;
+  const latestDate = getTodayIso();
 
   if (!latestDate) {
     return "";

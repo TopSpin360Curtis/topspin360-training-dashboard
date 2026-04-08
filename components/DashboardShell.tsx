@@ -54,6 +54,7 @@ import {
   getPlayerStats,
   getPlayerTrendSeries,
   getRiskBand,
+  getTodayIso,
   getTeamAverageRFD,
   getTeamLeaderboard,
   getTopPerformers,
@@ -870,7 +871,7 @@ export default function DashboardShell({
   }
 
   function handleApplyDatePreset(preset: DatePreset) {
-    const anchor = dateBounds.end || endDate || dateBounds.start;
+    const anchor = getTodayIso();
 
     if (preset === "season") {
       setStartDate("2025-03-01");
@@ -887,10 +888,6 @@ export default function DashboardShell({
     if (preset === "season2023") {
       setStartDate("2023-03-01");
       setEndDate("2024-03-31");
-      return;
-    }
-
-    if (!anchor) {
       return;
     }
 
