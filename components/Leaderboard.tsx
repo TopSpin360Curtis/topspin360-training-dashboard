@@ -1,7 +1,7 @@
 "use client";
 
 import type { MouseEvent } from "react";
-import { formatNumber } from "@/lib/dataUtils";
+import { formatDate, formatNumber } from "@/lib/dataUtils";
 import AsymmetryIndicator from "@/components/AsymmetryIndicator";
 import RiskBandBadge from "@/components/RiskBandBadge";
 import TeamAverageComparator from "@/components/TeamAverageComparator";
@@ -131,6 +131,14 @@ export default function Leaderboard({
                 {row.reviewPriority === "high" ? (
                   <p className="mt-2 text-xs text-slate-500">{row.reviewReasons.join(" · ")}</p>
                 ) : null}
+                {row.lastSessionDate ? (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Most recent {formatNumber(row.latestBestRFD ?? 0)} · {formatDate(row.lastSessionDate)} ·{" "}
+                    {row.daysSinceLastTraining ?? 0} days since last training session
+                  </p>
+                ) : (
+                  <p className="mt-2 text-xs text-slate-500">No recent training session logged</p>
+                )}
               </td>
               <td className="px-4 py-4">
                 <p className="font-semibold text-brand-ink">{formatNumber(row.avgRFD)}</p>

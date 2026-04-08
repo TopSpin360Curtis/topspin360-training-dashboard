@@ -1048,8 +1048,14 @@ export default function DashboardShell({
         daysOfWeek={daysOfWeek}
         onDayToggle={handleDayToggle}
         onClearDays={() => setSelectedDays([])}
+        onClearFilters={() => {
+          setSelectedPlayers([]);
+          setSelectedDays([]);
+          setSelectedCohort("all");
+          setStartDate(dateBounds.start);
+          setEndDate(dateBounds.end);
+        }}
         onApplyDatePreset={handleApplyDatePreset}
-        onCsvUpload={handleCsvUpload}
         onPlayerContextMenu={handlePlayerContextMenu}
       />
 

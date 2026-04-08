@@ -7,8 +7,10 @@ import ExportButton from "@/components/ExportButton";
 import RiskBandBadge from "@/components/RiskBandBadge";
 import TeamAverageComparator from "@/components/TeamAverageComparator";
 import {
+  formatDate,
   formatNumber,
   formatSignedPercent,
+  getPlayerActivitySnapshot,
   getRiskBand,
   getPlayerStats,
   getTeamBenchmarkProgress
@@ -82,7 +84,8 @@ export default function GoalsView({
           player,
           stats,
           averageRiskBand: getRiskBand(stats.avgRFD),
-          bestRiskBand: getRiskBand(stats.bestRFD)
+          bestRiskBand: getRiskBand(stats.bestRFD),
+          activity: getPlayerActivitySnapshot(data, player)
         };
       }),
     [data, players]
@@ -297,7 +300,7 @@ export default function GoalsView({
             )}
           </div>
           <div className="mt-5 grid gap-4">
-            {filteredPlayerGoalStats.map(({ player, stats, averageRiskBand, bestRiskBand }) => {
+            {filteredPlayerGoalStats.map(({ player, stats, averageRiskBand, bestRiskBand, activity }) => {
               const activeBand = riskBandMetric === "avg" ? averageRiskBand : bestRiskBand;
               const target = config.playerTargets[player];
               const rfdProgress = target ? (stats.bestRFD / target.rfdTarget) * 100 : 0;
@@ -324,8 +327,18 @@ export default function GoalsView({
                         <RiskBandBadge band={activeBand} compact />
                       </div>
                       <p className="mt-1 text-sm text-slate-500">
-                        Best {formatNumber(stats.bestRFD)} | Sessions {stats.sessions}
+                        Best {formatNumber(stats.bestRFD)} | Sessions logged {stats.sessions}
                       </p>
+                      {activity.latestSessionDate ? (
+                        <p className="mt-2 text-sm text-slate-500">
+                          Most recent {formatNumber(activity.latestBestRFD ?? 0)} · {formatDate(activity.latestSessionDate)} ·{" "}
+                          {activity.daysSinceLastTraining ?? 0} days since last training session
+                        </p>
+                      ) : (
+                        <p className="mt-2 text-sm text-slate-500">
+                          No recent training session logged
+                        </p>
+                      )}
                       <div className="mt-3">
                         <TeamAverageComparator
                           delta={stats.avgRFD - teamAverage}
@@ -335,7 +348,7 @@ export default function GoalsView({
                       <div className="mt-4 space-y-3">
                         <ProgressRow label="RFD target" value={rfdProgress} />
                         <ProgressRow
-                          label="Session target"
+                          label="Session goal progress"
                           value={sessionProgress}
                           tone="orange"
                         />
@@ -364,26 +377,15 @@ export default function GoalsView({
                       />
                     </label>
 
-                    <label className="space-y-2 text-sm">
-                      <span className="font-medium text-slate-700">Session target</span>
-                      <input
-                        type="number"
-                        value={target?.sessionTarget ?? 0}
-                        onChange={(event) =>
-                          onConfigChange({
-                            ...config,
-                            playerTargets: {
-                              ...config.playerTargets,
-                              [player]: {
-                                ...(target ?? { rfdTarget: 0, sessionTarget: 0 }),
-                                sessionTarget: Number(event.target.value)
-                              }
-                            }
-                          })
-                        }
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
-                      />
-                    </label>
+                    <div className="space-y-2 text-sm">
+                      <span className="font-medium text-slate-700">Sessions logged</span>
+                      <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-brand-ink">
+                        <p className="text-lg font-semibold">{stats.sessions}</p>
+                        <p className="text-xs text-slate-500">
+                          Goal {target?.sessionTarget ?? 0}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );

@@ -157,6 +157,10 @@ export function formatDate(value: string) {
   return DATE_FORMATTER.format(date);
 }
 
+export function getDaysBetweenDates(from: string, to: string) {
+  return getDaysBetween(from, to);
+}
+
 export function getDayName(value: string) {
   const date = new Date(`${value}T12:00:00`);
   return date.toLocaleDateString("en-CA", {
@@ -216,6 +220,29 @@ export function getTrendStatus(changePct: number) {
 function getLastSessionDate(sessions: TrainingSession[]) {
   const ordered = sortSessionsByDate(sessions);
   return ordered.at(-1)?.date;
+}
+
+export function getPlayerActivitySnapshot(
+  data: TrainingSession[],
+  playerName: string,
+  referenceDate?: string
+) {
+  const sessions = sortSessionsByDate(
+    data.filter((session) => session.player === playerName)
+  );
+  const latestSession = sessions.at(-1) ?? null;
+  const effectiveReferenceDate =
+    referenceDate || getDateBounds(data).end || latestSession?.date || "";
+
+  return {
+    latestSession,
+    latestSessionDate: latestSession?.date ?? null,
+    latestBestRFD: latestSession?.bestRfd ?? null,
+    daysSinceLastTraining:
+      latestSession && effectiveReferenceDate
+        ? getDaysBetween(latestSession.date, effectiveReferenceDate)
+        : null
+  };
 }
 
 function getBottomPercentileThreshold(values: number[], percentile: number) {
@@ -551,10 +578,12 @@ export function getTeamLeaderboard(
     0.15
   );
   const recentThreshold = getRecentActivityThreshold(teamScopeData);
+  const activityReferenceDate = getDateBounds(data).end;
 
   return stats
     .map((stat) => {
       const sessions = data.filter((session) => session.player === stat.player);
+      const latestSession = sortSessionsByDate(sessions).at(-1);
       const reviewReasons = getAlertReasons(
         stat,
         teamAverage,
@@ -576,6 +605,11 @@ export function getTeamLeaderboard(
             ? ["Moderate-risk RFD band"]
             : ["Stable or improving"],
         lastSessionDate: getLastSessionDate(sessions),
+        latestBestRFD: latestSession?.bestRfd,
+        daysSinceLastTraining:
+          latestSession && activityReferenceDate
+            ? getDaysBetween(latestSession.date, activityReferenceDate)
+            : null,
         rank: 0
       };
     })

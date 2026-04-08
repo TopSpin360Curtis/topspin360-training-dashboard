@@ -117,6 +117,8 @@ export type LeaderboardRow = PlayerStats & {
   reviewPriority: ReviewPriority;
   reviewReasons: string[];
   lastSessionDate?: string;
+  latestBestRFD?: number;
+  daysSinceLastTraining?: number | null;
 };
 
 export type DayOfWeekStat = {

@@ -20,8 +20,8 @@ type FilterBarProps = {
   daysOfWeek: string[];
   onDayToggle: (value: string) => void;
   onClearDays: () => void;
+  onClearFilters: () => void;
   onApplyDatePreset: (preset: "last7" | "last30" | "season" | "season2024" | "season2023") => void;
-  onCsvUpload: (file: File) => void;
   onPlayerContextMenu?: (player: string, event: MouseEvent<HTMLElement>) => void;
 };
 
@@ -41,8 +41,8 @@ export default function FilterBar({
   daysOfWeek,
   onDayToggle,
   onClearDays,
+  onClearFilters,
   onApplyDatePreset,
-  onCsvUpload,
   onPlayerContextMenu
 }: FilterBarProps) {
   const [playerSearch, setPlayerSearch] = useState("");
@@ -65,6 +65,7 @@ export default function FilterBar({
         endDate={endDate}
         selectedDays={selectedDays}
         selectedCohort={selectedCohort}
+        onClearFilters={onClearFilters}
       >
         <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr_1fr_0.8fr]">
           <div className="space-y-2">
@@ -233,22 +234,6 @@ export default function FilterBar({
                 Left click to toggle one or many training days.
               </p>
             </div>
-
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">CSV fallback</span>
-              <input
-                type="file"
-                accept=".csv,text/csv"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-
-                  if (file) {
-                    onCsvUpload(file);
-                  }
-                }}
-                className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-full file:border-0 file:bg-brand-blue file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:brightness-95"
-              />
-            </label>
           </div>
 
           <div className="rounded-2xl bg-brand-mist p-4">

@@ -9,6 +9,7 @@ type CollapsibleFilterBarProps = {
   endDate: string;
   selectedDays: string[];
   selectedCohort?: string;
+  onClearFilters: () => void;
   children: ReactNode;
 };
 
@@ -72,6 +73,7 @@ export default function CollapsibleFilterBar({
   endDate,
   selectedDays,
   selectedCohort,
+  onClearFilters,
   children
 }: CollapsibleFilterBarProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -112,7 +114,14 @@ export default function CollapsibleFilterBar({
         }}
       >
         <div ref={contentRef} className="border-t border-slate-100 px-4 pb-4 pt-3">
-          <div className="mb-3 flex justify-end">
+          <div className="mb-3 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClearFilters}
+              className="min-h-10 rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-200"
+            >
+              Clear filters
+            </button>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
