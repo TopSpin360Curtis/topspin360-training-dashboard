@@ -1195,7 +1195,11 @@ export default function DashboardShell({
               <StatCard
                 label="Best Performer"
                 value={bestPerformer ? formatNumber(bestPerformer.bestRfd) : "0.00"}
-                subtext={bestPerformer ? bestPerformer.player : "No sessions available"}
+                subtext={
+                  bestPerformer
+                    ? `${bestPerformer.player} · ${bestPerformer.date}`
+                    : "No sessions available"
+                }
                 badge={
                   bestPerformer ? <RiskBandBadge band={getRiskBand(bestPerformer.bestRfd)} /> : undefined
                 }
