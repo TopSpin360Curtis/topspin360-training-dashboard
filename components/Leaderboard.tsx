@@ -69,6 +69,7 @@ export default function Leaderboard({
     label: string;
     key: SortKey;
     className?: string;
+    description?: string;
   }> = [
     { label: "Rank", key: "rank" },
     { label: "Player", key: "player" },
@@ -76,7 +77,12 @@ export default function Leaderboard({
     { label: "Vs Team", key: "teamDeltaPct", className: "hidden md:table-cell" },
     { label: "Balance", key: "imbalancePct", className: "hidden md:table-cell" },
     { label: "Sessions", key: "sessions" },
-    { label: "Trend", key: "trendDelta", className: "hidden md:table-cell" }
+    {
+      label: "Trend",
+      key: "trendDelta",
+      className: "hidden md:table-cell",
+      description: "Current half vs prior half"
+    }
   ];
 
   return (
@@ -92,12 +98,19 @@ export default function Leaderboard({
                 <button
                   type="button"
                   onClick={() => onSortChange(heading.key)}
-                  className="flex items-center gap-2 transition hover:text-brand-blue"
+                  className="flex flex-col items-start gap-1 transition hover:text-brand-blue"
                 >
-                  {heading.label}
-                  {sortKey === heading.key ? (
-                    <span className="text-xs text-brand-blue">
-                      {sortDirection === "asc" ? "↑" : "↓"}
+                  <span className="flex items-center gap-2">
+                    {heading.label}
+                    {sortKey === heading.key ? (
+                      <span className="text-xs text-brand-blue">
+                        {sortDirection === "asc" ? "↑" : "↓"}
+                      </span>
+                    ) : null}
+                  </span>
+                  {heading.description ? (
+                    <span className="text-[11px] font-medium text-slate-400">
+                      {heading.description}
                     </span>
                   ) : null}
                 </button>
@@ -164,16 +177,7 @@ export default function Leaderboard({
               </td>
               <td className="px-4 py-4 text-slate-700">{row.sessions}</td>
               <td className="hidden px-4 py-4 md:table-cell">
-                <div className="space-y-2">
-                  <div>{renderTrend(row.trendDelta)}</div>
-                  <p className="text-xs text-slate-500">
-                    {row.reviewPriority === "high"
-                      ? "High Priority"
-                      : row.reviewPriority === "monitor"
-                        ? "Monitor"
-                        : "On Track"}
-                  </p>
-                </div>
+                {renderTrend(row.trendDelta)}
               </td>
             </tr>
           ))}
