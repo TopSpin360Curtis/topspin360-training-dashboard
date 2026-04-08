@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import ModeLoginScreen from "@/components/ModeLoginScreen";
-import { getTenantById } from "@/lib/auth";
+import { getTenantByLoginRoute } from "@/lib/auth";
 
 export default async function TenantLoginPage({
   params,
@@ -10,7 +10,7 @@ export default async function TenantLoginPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const resolvedParams = await params;
-  const tenant = getTenantById(resolvedParams.tenant);
+  const tenant = getTenantByLoginRoute(resolvedParams.tenant);
 
   if (!tenant) {
     notFound();

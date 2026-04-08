@@ -16,7 +16,7 @@ export default async function TeamLoginRedirectPage({
         ? nextValue[0] || "/"
         : "/";
 
-  if (tenant?.id === "team") {
+  if (tenant?.loginRoute === "team") {
     return <ModeLoginScreen mode="team" nextPath={nextPath} tenant={tenant} />;
   }
 

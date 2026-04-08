@@ -16,6 +16,7 @@ type DashboardTenantConfig = DashboardTenant & {
 
 type RawDashboardTenantConfig = {
   id?: unknown;
+  loginRoute?: unknown;
   label?: unknown;
   username?: unknown;
   password?: unknown;
@@ -34,6 +35,10 @@ function normalizeText(value: string) {
 
 function normalizeTenantId(value: string) {
   return normalizeText(value).toLowerCase().replace(/[^a-z0-9-]/g, "-");
+}
+
+function normalizeLoginRoute(value: string) {
+  return normalizeTenantId(value);
 }
 
 function normalizeUsername(value: string) {
@@ -64,18 +69,22 @@ function parseTenantConfig(value: RawDashboardTenantConfig): DashboardTenantConf
   }
 
   const id = normalizeTenantId(value.id);
+  const loginRoute = normalizeLoginRoute(
+    typeof value.loginRoute === "string" && value.loginRoute.trim() ? value.loginRoute : value.id
+  );
   const label = normalizeText(value.label);
   const username = normalizeUsername(value.username);
   const password = normalizeText(value.password);
   const role = isValidRole(value.role) ? value.role : "member";
   const canExport = typeof value.canExport === "boolean" ? value.canExport : true;
 
-  if (!id || !label || !username || !password) {
+  if (!id || !loginRoute || !label || !username || !password) {
     return null;
   }
 
   return {
     id,
+    loginRoute,
     label,
     username,
     password,
@@ -99,6 +108,7 @@ function getFallbackTenantConfigs(): DashboardTenantConfig[] {
   return [
     {
       id: "team",
+      loginRoute: "team",
       label: "Team Data",
       username: "team",
       password: sharedPassword,
@@ -112,6 +122,7 @@ function getFallbackTenantConfigs(): DashboardTenantConfig[] {
     },
     {
       id: "test",
+      loginRoute: "test",
       label: "Test Data",
       username: "test",
       password: sharedPassword,
@@ -159,7 +170,12 @@ export function getLoginPathForMode(mode: DashboardProfile) {
 }
 
 export function getLoginPathForTenant(tenantId: string) {
-  return `/login/${normalizeTenantId(tenantId)}`;
+  const tenant = getTenantConfigById(tenantId);
+  return `/login/${tenant?.loginRoute ?? normalizeTenantId(tenantId)}`;
+}
+
+export function getLoginPathForRoute(route: string) {
+  return `/login/${normalizeLoginRoute(route)}`;
 }
 
 export function getDefaultTenantForMode(mode: DashboardProfile) {
@@ -175,7 +191,7 @@ export function getDefaultTenantForMode(mode: DashboardProfile) {
 
 export function getDefaultLoginPathForMode(mode: DashboardProfile) {
   const tenant = getDefaultTenantForMode(mode);
-  return tenant ? getLoginPathForTenant(tenant.id) : getLoginPathForMode(mode);
+  return tenant ? getLoginPathForRoute(tenant.loginRoute) : getLoginPathForMode(mode);
 }
 
 export function getDashboardModeFromCookieValue(value: string | null | undefined) {
@@ -193,6 +209,22 @@ export function getTenantById(id: string | null | undefined): DashboardTenant | 
 
   const normalizedId = normalizeTenantId(id);
   const tenant = getTenantConfigsFromEnv().find((entry) => entry.id === normalizedId);
+
+  if (!tenant) {
+    return null;
+  }
+
+  const { password: _password, ...safeTenant } = tenant;
+  return safeTenant;
+}
+
+export function getTenantByLoginRoute(route: string | null | undefined): DashboardTenant | null {
+  if (!route) {
+    return null;
+  }
+
+  const normalizedRoute = normalizeLoginRoute(route);
+  const tenant = getTenantConfigsFromEnv().find((entry) => entry.loginRoute === normalizedRoute);
 
   if (!tenant) {
     return null;
@@ -254,16 +286,16 @@ export async function authenticateTenantLogin({
   username,
   password,
   mode,
-  tenantId
+  loginRoute
 }: {
   username: string;
   password: string;
   mode?: DashboardProfile | null;
-  tenantId?: string | null;
+  loginRoute?: string | null;
 }) {
   const normalizedUsername = normalizeUsername(username);
   const normalizedPassword = normalizeText(password);
-  const normalizedTenantId = tenantId ? normalizeTenantId(tenantId) : null;
+  const normalizedLoginRoute = loginRoute ? normalizeLoginRoute(loginRoute) : null;
 
   if (!normalizedUsername || !normalizedPassword) {
     return null;
@@ -274,7 +306,7 @@ export async function authenticateTenantLogin({
       entry.username === normalizedUsername &&
       entry.password === normalizedPassword &&
       (!mode || entry.profile === mode) &&
-      (!normalizedTenantId || entry.id === normalizedTenantId)
+      (!normalizedLoginRoute || entry.loginRoute === normalizedLoginRoute)
   );
 
   if (!tenant) {

@@ -13,6 +13,7 @@ export type DashboardRole = "admin" | "member";
 
 export type DashboardTenant = {
   id: string;
+  loginRoute: string;
   label: string;
   username: string;
   profile: DashboardProfile;

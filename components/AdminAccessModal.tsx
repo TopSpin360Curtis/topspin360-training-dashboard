@@ -109,7 +109,7 @@ export default function AdminAccessModal({ open, onClose }: AdminAccessModalProp
                         </span>
                       </div>
                       <p className="mt-2 text-sm text-slate-500">Username: {account.username}</p>
-                      <p className="mt-1 text-sm text-slate-500">Route: /login/{account.id}</p>
+                      <p className="mt-1 text-sm text-slate-500">Route: /login/{account.loginRoute}</p>
                       <p className="mt-1 text-sm text-slate-500">
                         Export access: {account.canExport ? "Yes" : "No"}
                       </p>

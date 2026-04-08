@@ -65,7 +65,7 @@ export default function ModeLoginScreen({ mode, nextPath, tenant = null }: ModeL
           nextPath={nextPath}
           mode={mode}
           tenantLabel={badgeLabel}
-          tenantId={tenant?.id}
+          loginRoute={tenant?.loginRoute}
         />
       </section>
     </main>

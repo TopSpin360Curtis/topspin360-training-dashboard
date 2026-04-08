@@ -2,11 +2,14 @@ import Link from "next/link";
 import {
   getConfiguredTenants,
   getDefaultLoginPathForMode,
-  getLoginPathForTenant
+  getLoginPathForRoute
 } from "@/lib/auth";
 
 export default function LoginLandingPage() {
   const tenants = getConfiguredTenants();
+  const routeTenants = Array.from(
+    new Map(tenants.map((tenant) => [tenant.loginRoute, tenant])).values()
+  );
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(26,111,196,0.18),_transparent_40%),linear-gradient(180deg,_#f7fbff_0%,_#eef3f9_100%)] px-4 py-10">
@@ -21,12 +24,12 @@ export default function LoginLandingPage() {
           Each username is tied to a single dataset. Use the correct team or test route below.
         </p>
 
-        {tenants.length ? (
+        {routeTenants.length ? (
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {tenants.map((tenant) => (
+            {routeTenants.map((tenant) => (
               <Link
-                key={tenant.id}
-                href={getLoginPathForTenant(tenant.id)}
+                key={tenant.loginRoute}
+                href={getLoginPathForRoute(tenant.loginRoute)}
                 className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 transition hover:-translate-y-0.5 hover:border-brand-blue/30 hover:bg-white"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-blue/70">
@@ -34,11 +37,9 @@ export default function LoginLandingPage() {
                 </p>
                 <p className="mt-2 text-lg font-semibold text-brand-ink">{tenant.label}</p>
                 <p className="mt-1 text-sm font-semibold text-slate-500">
-                  {getLoginPathForTenant(tenant.id)}
+                  {getLoginPathForRoute(tenant.loginRoute)}
                 </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  Username: {tenant.username}
-                </p>
+                <p className="mt-2 text-sm text-slate-500">Shared login route</p>
               </Link>
             ))}
           </div>

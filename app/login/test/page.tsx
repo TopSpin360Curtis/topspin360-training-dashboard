@@ -16,7 +16,7 @@ export default async function TestLoginRedirectPage({
         ? nextValue[0] || "/"
         : "/";
 
-  if (tenant?.id === "test") {
+  if (tenant?.loginRoute === "test") {
     return <ModeLoginScreen mode="test" nextPath={nextPath} tenant={tenant} />;
   }
 

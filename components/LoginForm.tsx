@@ -8,12 +8,12 @@ export default function LoginForm({
   nextPath,
   mode,
   tenantLabel,
-  tenantId
+  loginRoute
 }: {
   nextPath: string;
   mode: DashboardProfile;
   tenantLabel?: string;
-  tenantId?: string;
+  loginRoute?: string;
 }) {
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -30,7 +30,7 @@ export default function LoginForm({
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ username, password, mode, tenantId })
+      body: JSON.stringify({ username, password, mode, loginRoute })
     });
 
     if (!response.ok) {

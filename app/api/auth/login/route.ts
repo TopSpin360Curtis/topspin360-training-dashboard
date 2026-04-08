@@ -19,12 +19,12 @@ export async function POST(request: NextRequest) {
   }
 
   const payload = (await request.json().catch(() => null)) as
-    | { username?: string; password?: string; mode?: DashboardProfile; tenantId?: string }
+    | { username?: string; password?: string; mode?: DashboardProfile; loginRoute?: string }
     | null;
   const submittedUsername = payload?.username?.trim() ?? "";
   const submittedPassword = payload?.password?.trim() ?? "";
   const submittedMode = payload?.mode;
-  const submittedTenantId = payload?.tenantId?.trim() ?? "";
+  const submittedLoginRoute = payload?.loginRoute?.trim() ?? "";
 
   if (!submittedUsername) {
     return NextResponse.json({ error: "Enter your username." }, { status: 400 });
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     username: submittedUsername,
     password: submittedPassword,
     mode: submittedMode,
-    tenantId: submittedTenantId || undefined
+    loginRoute: submittedLoginRoute || undefined
   });
 
   if (!authenticated) {
