@@ -64,7 +64,7 @@ import { exportElementToPdf } from "@/lib/exportPdf";
 import { loadPlayerInjuries, savePlayerInjuries } from "@/lib/injuryStorage";
 import { loadCoachNotes, saveCoachNotes } from "@/lib/notesStorage";
 import { sampleTrainingData } from "@/lib/sampleData";
-import { getLoginPathForTenant } from "@/lib/auth";
+import { getLoginPathForRoute } from "@/lib/auth";
 import type {
   BenchmarkConfig,
   CoachNote,
@@ -1113,7 +1113,11 @@ export default function DashboardShell({
         onViewChange={handleViewChange}
         dataProfile={activeProfile}
         tenantLabel={activeDatasetLabel}
-        tenantLoginPath={authenticatedTenant ? getLoginPathForTenant(authenticatedTenant.id) : undefined}
+        tenantLoginPath={
+          authenticatedTenant
+            ? getLoginPathForRoute(authenticatedTenant.loginRoute)
+            : undefined
+        }
         onProfileChange={handleProfileChange}
         modeLocked={modeLocked}
         onExportCsv={handleExportCsv}
