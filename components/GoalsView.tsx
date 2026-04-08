@@ -377,15 +377,27 @@ export default function GoalsView({
                       />
                     </label>
 
-                    <div className="space-y-2 text-sm">
-                      <span className="font-medium text-slate-700">Sessions logged</span>
-                      <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-brand-ink">
-                        <p className="text-lg font-semibold">{stats.sessions}</p>
-                        <p className="text-xs text-slate-500">
-                          Goal {target?.sessionTarget ?? 0}
-                        </p>
-                      </div>
-                    </div>
+                    <label className="space-y-2 text-sm">
+                      <span className="font-medium text-slate-700">Session goal</span>
+                      <input
+                        type="number"
+                        value={target?.sessionTarget ?? 0}
+                        onChange={(event) =>
+                          onConfigChange({
+                            ...config,
+                            playerTargets: {
+                              ...config.playerTargets,
+                              [player]: {
+                                ...(target ?? { rfdTarget: 0, sessionTarget: 0 }),
+                                sessionTarget: Number(event.target.value)
+                              }
+                            }
+                          })
+                        }
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+                      />
+                      <p className="text-xs text-slate-500">Sessions logged: {stats.sessions}</p>
+                    </label>
                   </div>
                 </div>
               );
