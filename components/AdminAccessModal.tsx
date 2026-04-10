@@ -13,6 +13,7 @@ type AdminOverviewPayload = {
   accounts: DashboardTenant[];
   loginEvents: LoginAuditEvent[];
   auditConfigured: boolean;
+  auditError?: string;
 };
 
 export default function AdminAccessModal({ open, onClose }: AdminAccessModalProps) {
@@ -143,6 +144,11 @@ export default function AdminAccessModal({ open, onClose }: AdminAccessModalProp
                 ) : null}
               </div>
               <div className="mt-4 space-y-3">
+                {payload?.auditError ? (
+                  <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">
+                    {payload.auditError}
+                  </div>
+                ) : null}
                 {payload?.loginEvents.length ? (
                   payload.loginEvents.map((event) => (
                     <div key={`${event.tenantId}-${event.username}-${event.timestamp}`} className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -160,7 +166,9 @@ export default function AdminAccessModal({ open, onClose }: AdminAccessModalProp
                   ))
                 ) : (
                   <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-4 text-sm text-slate-500">
-                    {payload?.auditConfigured
+                    {payload?.auditError
+                      ? "Fix the audit sheet settings above and reopen Admin to load login history."
+                      : payload?.auditConfigured
                       ? "No successful sign-ins have been logged yet for this dataset."
                       : "Add LOGIN_AUDIT_SHEET_ID and LOGIN_AUDIT_SHEET_RANGE in Vercel to track successful sign-ins across devices."}
                   </div>
