@@ -169,11 +169,19 @@ function applyDefaultRfdTargets(config: BenchmarkConfig): BenchmarkConfig {
   };
 }
 
-function getDefaultSeasonRange() {
+function getRelativeDateRange(daysBack: number) {
+  const end = getTodayIso();
+  const anchorDate = new Date(`${end}T12:00:00`);
+  anchorDate.setDate(anchorDate.getDate() - daysBack);
+
   return {
-    start: "2025-03-01",
-    end: "2026-03-31"
+    start: anchorDate.toISOString().slice(0, 10),
+    end
   };
+}
+
+function getDefaultLast30DayRange() {
+  return getRelativeDateRange(29);
 }
 
 function SectionPanel({
@@ -576,14 +584,14 @@ export default function DashboardShell({
     }
 
     const nextPlayers = getUniquePlayers(nextData);
-    const defaultSeasonRange = getDefaultSeasonRange();
+    const defaultRecentRange = getDefaultLast30DayRange();
 
     setData(nextData);
     setSourceMeta(nextSource);
     setSelectedPlayers([]);
     setSelectedDays([]);
-    setStartDate(defaultSeasonRange.start);
-    setEndDate(defaultSeasonRange.end);
+    setStartDate(defaultRecentRange.start);
+    setEndDate(defaultRecentRange.end);
     setSelectedTrendPlayer(nextPlayers[0] ?? "");
     setTrendPlayerSearch("");
     setComparePlayers(nextPlayers.slice(0, 3));
@@ -811,8 +819,8 @@ export default function DashboardShell({
           setData(cleaned);
           setSelectedPlayers([]);
           setSelectedDays([]);
-          setStartDate(getDefaultSeasonRange().start);
-          setEndDate(getDefaultSeasonRange().end);
+          setStartDate(getDefaultLast30DayRange().start);
+          setEndDate(getDefaultLast30DayRange().end);
           setSelectedTrendPlayer(getUniquePlayers(cleaned)[0] ?? "");
           setComparePlayers(getUniquePlayers(cleaned).slice(0, 3));
           setSourceMeta({
@@ -864,8 +872,8 @@ export default function DashboardShell({
         setData(payload.data);
         setSelectedPlayers([]);
         setSelectedDays([]);
-        setStartDate(getDefaultSeasonRange().start);
-        setEndDate(getDefaultSeasonRange().end);
+        setStartDate(getDefaultLast30DayRange().start);
+        setEndDate(getDefaultLast30DayRange().end);
         setSelectedTrendPlayer(getUniquePlayers(payload.data)[0] ?? "");
         setComparePlayers(getUniquePlayers(payload.data).slice(0, 3));
         setSourceMeta({
@@ -924,8 +932,8 @@ export default function DashboardShell({
     const anchor = getTodayIso();
 
     if (preset === "season") {
-      setStartDate(getDefaultSeasonRange().start);
-      setEndDate(getDefaultSeasonRange().end);
+      setStartDate("2025-03-01");
+      setEndDate("2026-03-31");
       return;
     }
 
@@ -947,13 +955,9 @@ export default function DashboardShell({
       return;
     }
 
-    const anchorDate = new Date(`${anchor}T12:00:00`);
-    const daysBack = preset === "last7" ? 6 : 29;
-    anchorDate.setDate(anchorDate.getDate() - daysBack);
-    const nextStart = anchorDate.toISOString().slice(0, 10);
-
-    setStartDate(nextStart);
-    setEndDate(anchor);
+    const range = getRelativeDateRange(preset === "last7" ? 6 : 29);
+    setStartDate(range.start);
+    setEndDate(range.end);
   }
 
   function handleExportCsv() {
@@ -1152,8 +1156,8 @@ export default function DashboardShell({
           setSelectedPlayers([]);
           setSelectedDays([]);
           setSelectedCohort("all");
-          setStartDate(getDefaultSeasonRange().start);
-          setEndDate(getDefaultSeasonRange().end);
+          setStartDate(getDefaultLast30DayRange().start);
+          setEndDate(getDefaultLast30DayRange().end);
         }}
         onApplyDatePreset={handleApplyDatePreset}
         onPlayerContextMenu={handlePlayerContextMenu}
