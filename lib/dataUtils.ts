@@ -316,7 +316,7 @@ function getAlertReasons(
 }
 
 export function isDisplayablePlayerName(value: string) {
-  const normalized = normalizeWhitespace(value);
+  const normalized = normalizeImportedPlayerName(value);
 
   if (!normalized.includes(" ") || /\d/.test(normalized)) {
     return false;
@@ -328,7 +328,32 @@ export function isDisplayablePlayerName(value: string) {
     return false;
   }
 
-  return parts.every((part) => /^[A-Za-z][A-Za-z'’-]*$/.test(part) && part.length >= 2);
+  const longParts = parts.filter((part) => part.length >= 2);
+
+  if (longParts.length < 2) {
+    return false;
+  }
+
+  return parts.every((part) => /^[A-Za-z][A-Za-z'’-]*$/.test(part));
+}
+
+export function normalizeImportedPlayerName(value: string) {
+  const normalized = normalizeWhitespace(value);
+
+  if (!normalized.includes(",")) {
+    return normalized;
+  }
+
+  const [lastName, firstName, ...rest] = normalized
+    .split(",")
+    .map((part) => normalizeWhitespace(part))
+    .filter(Boolean);
+
+  if (!lastName || !firstName || rest.length) {
+    return normalized;
+  }
+
+  return normalizeWhitespace(`${firstName} ${lastName}`);
 }
 
 export function countUnclaimedTrainingRows(rows: Array<Record<string, unknown>>) {
@@ -342,7 +367,7 @@ export function extractUnclaimedTrainingRows(
     const normalizedEntries = Object.fromEntries(
       Object.entries(row).map(([key, value]) => [normalizeKey(key), value])
     );
-    const player = normalizeWhitespace(
+    const player = normalizeImportedPlayerName(
       String(normalizedEntries.player ?? normalizedEntries.athlete ?? "")
     );
 
@@ -381,7 +406,7 @@ export function coerceTrainingSession(
     Object.entries(row).map(([key, value]) => [normalizeKey(key), value])
   );
 
-  const player = normalizeWhitespace(
+  const player = normalizeImportedPlayerName(
     String(normalizedEntries.player ?? normalizedEntries.athlete ?? "")
   );
   const dateRaw = String(normalizedEntries.date ?? "").trim();
