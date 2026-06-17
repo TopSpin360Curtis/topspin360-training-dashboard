@@ -419,10 +419,20 @@ export function coerceTrainingSession(
         ""
     ).trim() || (parsedDate ? getDayName(parsedDate) : "");
   const maxRfdCCW = toNumber(
-    normalizedEntries.maxrfdccw ?? normalizedEntries.rfdccw ?? normalizedEntries.ccw
+    normalizedEntries.maxrfdccw ??
+      normalizedEntries.maxrfdcc ??
+      normalizedEntries.rfdccw ??
+      normalizedEntries.rfdcc ??
+      normalizedEntries.ccw ??
+      normalizedEntries.cc
   );
   const maxRfdCW = toNumber(
-    normalizedEntries.maxrfdcw ?? normalizedEntries.rfdcw ?? normalizedEntries.cw
+    normalizedEntries.maxrfdcw ??
+      normalizedEntries.maxrfdcv ??
+      normalizedEntries.rfdcw ??
+      normalizedEntries.rfdcv ??
+      normalizedEntries.cw ??
+      normalizedEntries.cv
   );
   const bestRfd =
     toNumber(normalizedEntries.bestrfd ?? normalizedEntries.best) ??
