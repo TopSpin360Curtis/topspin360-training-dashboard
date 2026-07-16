@@ -331,12 +331,18 @@ function ReviewPanel({
 
 export default function DashboardShell({
   passwordProtectionEnabled = false,
-  authenticatedTenant = null
+  authenticatedTenant = null,
+  lockTenantSelection = false,
+  allowLogout = passwordProtectionEnabled,
+  sheetTenantId = null
 }: {
   passwordProtectionEnabled?: boolean;
   authenticatedTenant?: DashboardTenant | null;
+  lockTenantSelection?: boolean;
+  allowLogout?: boolean;
+  sheetTenantId?: string | null;
 }) {
-  const modeLocked = Boolean(passwordProtectionEnabled && authenticatedTenant);
+  const modeLocked = Boolean((passwordProtectionEnabled || lockTenantSelection) && authenticatedTenant);
   const [activeProfile, setActiveProfile] = useState<DashboardProfile>(
     authenticatedTenant?.profile ?? "team"
   );
@@ -840,7 +846,13 @@ export default function DashboardShell({
     setIsSyncingSheets(true);
 
     try {
-      const response = await fetch(`/api/sheets?profile=${activeProfile}`, {
+      const params = new URLSearchParams({ profile: activeProfile });
+
+      if (sheetTenantId) {
+        params.set("tenantId", sheetTenantId);
+      }
+
+      const response = await fetch(`/api/sheets?${params.toString()}`, {
         cache: "no-store",
         credentials: "same-origin"
       });
@@ -1132,7 +1144,7 @@ export default function DashboardShell({
         isSyncing={isSyncingSheets}
         isExportingPdf={isExportingPdf}
         alertCount={alerts.length}
-        canLogout={passwordProtectionEnabled}
+        canLogout={allowLogout}
         canExport={canExport}
         isAdmin={isAdmin}
       />

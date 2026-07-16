@@ -11,8 +11,8 @@ import {
   validateAuthCookies
 } from "@/lib/auth";
 
-const PUBLIC_PATH_PREFIXES = ["/_next", "/login"];
-const PUBLIC_EXACT_PATHS = ["/favicon.ico", "/api/auth/login", "/api/auth/logout"];
+const PUBLIC_PATH_PREFIXES = ["/_next", "/login", "/auth-v2"];
+const PUBLIC_EXACT_PATHS = ["/favicon.ico", "/api/auth/login", "/api/auth/logout", "/api/sheets"];
 
 export async function middleware(request: NextRequest) {
   if (!isAuthenticationEnabled()) {

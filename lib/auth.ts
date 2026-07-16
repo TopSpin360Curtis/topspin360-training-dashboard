@@ -29,6 +29,23 @@ type RawDashboardTenantConfig = {
   canExport?: unknown;
 };
 
+type SupplementalTenantEnvConfig = {
+  id: string;
+  defaultLabel: string;
+  defaultLoginRoute: string;
+  profile: DashboardProfile;
+  usernameEnv: string;
+  passwordEnv: string;
+  labelEnv?: string;
+  loginRouteEnv?: string;
+  sheetIdEnv?: string;
+  rangeEnv?: string;
+  publicSheetIdEnv?: string;
+  apiKeyEnv?: string;
+  roleEnv?: string;
+  canExportEnv?: string;
+};
+
 function normalizeText(value: string) {
   return value.trim();
 }
@@ -47,6 +64,14 @@ function normalizeUsername(value: string) {
 
 function coerceOptionalString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function getOptionalEnvValue(key?: string) {
+  if (!key) {
+    return undefined;
+  }
+
+  return process.env[key]?.trim() || undefined;
 }
 
 function isValidProfile(value: unknown): value is DashboardProfile {
@@ -137,11 +162,100 @@ function getFallbackTenantConfigs(): DashboardTenantConfig[] {
   ];
 }
 
+function parseOptionalBoolean(value: string | undefined, fallback: boolean) {
+  if (!value) {
+    return fallback;
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (["true", "1", "yes", "y"].includes(normalized)) {
+    return true;
+  }
+
+  if (["false", "0", "no", "n"].includes(normalized)) {
+    return false;
+  }
+
+  return fallback;
+}
+
+function buildSupplementalTenantFromEnv(
+  config: SupplementalTenantEnvConfig
+): DashboardTenantConfig | null {
+  const username = getOptionalEnvValue(config.usernameEnv);
+  const password = getOptionalEnvValue(config.passwordEnv);
+
+  if (!username || !password) {
+    return null;
+  }
+
+  return parseTenantConfig({
+    id: config.id,
+    label: getOptionalEnvValue(config.labelEnv) ?? config.defaultLabel,
+    loginRoute: getOptionalEnvValue(config.loginRouteEnv) ?? config.defaultLoginRoute,
+    username,
+    password,
+    profile: config.profile,
+    sheetId: getOptionalEnvValue(config.sheetIdEnv),
+    range: getOptionalEnvValue(config.rangeEnv),
+    publicSheetId: getOptionalEnvValue(config.publicSheetIdEnv),
+    apiKey: getOptionalEnvValue(config.apiKeyEnv),
+    role: getOptionalEnvValue(config.roleEnv),
+    canExport: parseOptionalBoolean(getOptionalEnvValue(config.canExportEnv), true)
+  });
+}
+
+function getSupplementalTenantConfigs(): DashboardTenantConfig[] {
+  const supplementalTenants = [
+    buildSupplementalTenantFromEnv({
+      id: "texans",
+      defaultLabel: "Houston Texans",
+      defaultLoginRoute: "texans",
+      profile: "team",
+      usernameEnv: "TEXANS_DASHBOARD_USERNAME",
+      passwordEnv: "TEXANS_DASHBOARD_PASSWORD",
+      labelEnv: "TEXANS_DASHBOARD_LABEL",
+      loginRouteEnv: "TEXANS_DASHBOARD_LOGIN_ROUTE",
+      sheetIdEnv: "TEXANS_GOOGLE_SHEET_ID",
+      rangeEnv: "TEXANS_GOOGLE_SHEET_RANGE",
+      publicSheetIdEnv: "TEXANS_PUBLIC_SHEET_ID",
+      apiKeyEnv: "TEXANS_GOOGLE_API_KEY",
+      roleEnv: "TEXANS_DASHBOARD_ROLE",
+      canExportEnv: "TEXANS_DASHBOARD_CAN_EXPORT"
+    })
+  ];
+
+  return supplementalTenants.filter((tenant): tenant is DashboardTenantConfig => Boolean(tenant));
+}
+
+function mergeTenantConfigs(
+  primary: DashboardTenantConfig[],
+  supplemental: DashboardTenantConfig[]
+) {
+  const merged = [...primary];
+
+  for (const tenant of supplemental) {
+    const existingIndex = merged.findIndex(
+      (entry) => entry.id === tenant.id || entry.loginRoute === tenant.loginRoute
+    );
+
+    if (existingIndex >= 0) {
+      continue;
+    }
+
+    merged.push(tenant);
+  }
+
+  return merged;
+}
+
 function getTenantConfigsFromEnv(): DashboardTenantConfig[] {
   const raw = process.env.DASHBOARD_TENANTS_JSON?.trim();
+  const supplementalTenants = getSupplementalTenantConfigs();
 
   if (!raw) {
-    return getFallbackTenantConfigs();
+    return mergeTenantConfigs(getFallbackTenantConfigs(), supplementalTenants);
   }
 
   try {
@@ -155,9 +269,12 @@ function getTenantConfigsFromEnv(): DashboardTenantConfig[] {
       .map((entry) => parseTenantConfig(entry as RawDashboardTenantConfig))
       .filter((entry): entry is DashboardTenantConfig => Boolean(entry));
 
-    return tenants.length ? tenants : getFallbackTenantConfigs();
+    return mergeTenantConfigs(
+      tenants.length ? tenants : getFallbackTenantConfigs(),
+      supplementalTenants
+    );
   } catch {
-    return getFallbackTenantConfigs();
+    return mergeTenantConfigs(getFallbackTenantConfigs(), supplementalTenants);
   }
 }
 
