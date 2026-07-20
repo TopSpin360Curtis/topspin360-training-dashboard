@@ -4,6 +4,7 @@ import {
   getAuthV2SignInPath,
   getAuthV2SignUpPath,
   isAuthV2Available,
+  isAuthV2InviteOnly,
   resolveTenantFromRoute
 } from "@/lib/authV2";
 
@@ -20,6 +21,7 @@ export default async function AuthV2TenantPage({ params }: AuthV2TenantPageProps
   }
 
   const authReady = isAuthV2Available();
+  const inviteOnly = isAuthV2InviteOnly();
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(26,111,196,0.18),_transparent_40%),linear-gradient(180deg,_#f7fbff_0%,_#eef3f9_100%)] px-4 py-10">
@@ -45,20 +47,31 @@ export default async function AuthV2TenantPage({ params }: AuthV2TenantPageProps
             Clerk credentials are not configured yet, so this page is in standby mode.
           </div>
         ) : (
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href={getAuthV2SignInPath(tenant.loginRoute)}
-              className="rounded-full bg-brand-blue px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-blue/90"
-            >
-              Continue to Sign In
-            </Link>
-            <Link
-              href={getAuthV2SignUpPath(tenant.loginRoute)}
-              className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-brand-blue/30 hover:text-brand-ink"
-            >
-              Preview Sign Up
-            </Link>
-          </div>
+          <>
+            {inviteOnly ? (
+              <div className="mt-6 rounded-3xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-900">
+                This preview is invite only. Users can sign in only after an admin has approved
+                their email address for the {tenant.label} dataset.
+              </div>
+            ) : null}
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                href={getAuthV2SignInPath(tenant.loginRoute)}
+                className="rounded-full bg-brand-blue px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-blue/90"
+              >
+                Continue to Sign In
+              </Link>
+              {!inviteOnly ? (
+                <Link
+                  href={getAuthV2SignUpPath(tenant.loginRoute)}
+                  className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-brand-blue/30 hover:text-brand-ink"
+                >
+                  Preview Sign Up
+                </Link>
+              ) : null}
+            </div>
+          </>
         )}
       </section>
     </main>

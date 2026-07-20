@@ -11,6 +11,13 @@ type ClerkDashboardAccess = {
   canExport?: boolean;
 };
 
+type AuthV2Invite = {
+  email: string;
+  tenantIds: string[];
+  role?: DashboardRole;
+  canExport?: boolean;
+};
+
 function normalizeBoolean(value: unknown) {
   if (typeof value === "boolean") {
     return value;
@@ -35,6 +42,10 @@ function normalizeRole(value: unknown): DashboardRole | undefined {
   return value === "admin" || value === "member" ? value : undefined;
 }
 
+function normalizeEmailAddress(value: string) {
+  return value.trim().toLowerCase();
+}
+
 function normalizeTenantIdList(value: unknown) {
   if (typeof value === "string" && value.trim()) {
     return [value.trim().toLowerCase()];
@@ -52,6 +63,61 @@ function normalizeTenantIdList(value: unknown) {
 
 function dedupeTenantIds(values: string[]) {
   return Array.from(new Set(values));
+}
+
+function parseInviteEntry(value: unknown): AuthV2Invite | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const raw = value as Record<string, unknown>;
+  const email = typeof raw.email === "string" ? normalizeEmailAddress(raw.email) : "";
+  const tenantIds = dedupeTenantIds([
+    ...normalizeTenantIdList(raw.tenantId),
+    ...normalizeTenantIdList(raw.tenantIds)
+  ]);
+
+  if (!email || !tenantIds.length) {
+    return null;
+  }
+
+  return {
+    email,
+    tenantIds,
+    role: normalizeRole(raw.role),
+    canExport: normalizeBoolean(raw.canExport)
+  };
+}
+
+function getAuthV2Invites(): AuthV2Invite[] {
+  const raw = process.env.AUTH_V2_INVITES_JSON?.trim();
+
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .map((entry) => parseInviteEntry(entry))
+      .filter((entry): entry is AuthV2Invite => Boolean(entry));
+  } catch {
+    return [];
+  }
+}
+
+function getInviteForEmail(email: string | null | undefined) {
+  if (!email) {
+    return null;
+  }
+
+  const normalizedEmail = normalizeEmailAddress(email);
+  return getAuthV2Invites().find((entry) => entry.email === normalizedEmail) ?? null;
 }
 
 function applyMetadataOverrides(
@@ -80,6 +146,16 @@ export function isAuthV2Available() {
   return isAuthV2Enabled() && isClerkConfigured();
 }
 
+export function isAuthV2InviteOnly() {
+  const value = process.env.AUTH_V2_INVITE_ONLY?.trim().toLowerCase();
+
+  if (!value) {
+    return true;
+  }
+
+  return !["false", "0", "no", "n", "off"].includes(value);
+}
+
 export function getAuthV2SignInPath(tenantRoute?: string | null) {
   return tenantRoute ? `/auth-v2/sign-in?tenant=${tenantRoute}` : "/auth-v2/sign-in";
 }
@@ -100,6 +176,25 @@ export function resolveTenantFromRoute(tenantRoute: string | null | undefined) {
   return getTenantByLoginRoute(tenantRoute) ?? getTenantById(tenantRoute);
 }
 
+export function getAuthV2InviteForEmail(
+  email: string | null | undefined,
+  tenantRoute?: string | null
+) {
+  const invite = getInviteForEmail(email);
+
+  if (!invite) {
+    return null;
+  }
+
+  const resolvedTenant = resolveTenantFromRoute(tenantRoute);
+
+  if (resolvedTenant && !invite.tenantIds.includes(resolvedTenant.id)) {
+    return null;
+  }
+
+  return invite;
+}
+
 export async function getClerkDashboardAccess(): Promise<ClerkDashboardAccess | null> {
   if (!isAuthV2Available()) {
     return null;
@@ -118,7 +213,11 @@ export async function getClerkDashboardAccess(): Promise<ClerkDashboardAccess | 
   }
 
   const metadata = (user.publicMetadata ?? {}) as Record<string, unknown>;
+  const invite = getInviteForEmail(
+    user.primaryEmailAddress?.emailAddress ?? user.emailAddresses[0]?.emailAddress ?? null
+  );
   const tenantIds = dedupeTenantIds([
+    ...(invite?.tenantIds ?? []),
     ...normalizeTenantIdList(metadata.dashboardTenantIds),
     ...normalizeTenantIdList(metadata.dashboardTenantId),
     ...normalizeTenantIdList(metadata.tenantIds),
@@ -133,9 +232,11 @@ export async function getClerkDashboardAccess(): Promise<ClerkDashboardAccess | 
       null,
     tenantIds,
     primaryTenantId: tenantIds[0] ?? null,
-    role: normalizeRole(metadata.dashboardRole) ?? normalizeRole(metadata.role),
+    role: invite?.role ?? normalizeRole(metadata.dashboardRole) ?? normalizeRole(metadata.role),
     canExport:
-      normalizeBoolean(metadata.dashboardCanExport) ?? normalizeBoolean(metadata.canExport)
+      invite?.canExport ??
+      normalizeBoolean(metadata.dashboardCanExport) ??
+      normalizeBoolean(metadata.canExport)
   };
 }
 

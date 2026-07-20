@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { getConfiguredTenants } from "@/lib/auth";
-import { isAuthV2Available } from "@/lib/authV2";
+import { isAuthV2Available, isAuthV2InviteOnly } from "@/lib/authV2";
 
 export default function AuthV2LandingPage() {
-  const tenants = getConfiguredTenants().filter((tenant) => tenant.profile === "team");
+  const tenants = getConfiguredTenants()
+    .filter((tenant) => tenant.profile === "team")
+    .filter(
+      (tenant, index, entries) =>
+        entries.findIndex((entry) => entry.loginRoute === tenant.loginRoute) === index
+    );
   const authReady = isAuthV2Available();
+  const inviteOnly = isAuthV2InviteOnly();
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(26,111,196,0.12),_transparent_45%),linear-gradient(180deg,_#f7fbff_0%,_#eef3f9_100%)] px-4 py-10">
@@ -23,6 +29,13 @@ export default function AuthV2LandingPage() {
           <div className="mt-8 rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
             Clerk is not configured yet. Once `AUTH_V2_ENABLED`, `CLERK_SECRET_KEY`, and
             `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` are set, these preview routes will go live.
+          </div>
+        ) : null}
+
+        {authReady && inviteOnly ? (
+          <div className="mt-4 rounded-3xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-900">
+            Invite-only mode is on. New accounts must use an admin-issued invitation email before
+            they can access a team dataset.
           </div>
         ) : null}
 
