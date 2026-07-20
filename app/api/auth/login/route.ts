@@ -8,7 +8,7 @@ import {
   isAuthenticationEnabled,
   isDashboardMode
 } from "@/lib/auth";
-import { getAuthV2SignInPath, isAuthV2Available, isTenantUsingAuthV2Live } from "@/lib/authV2";
+import { getAuthV2SignInPath, isTenantUsingAuthV2Live } from "@/lib/authV2";
 import { appendLoginAuditEvent } from "@/lib/loginAudit";
 
 export async function POST(request: NextRequest) {
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (isAuthV2Available() && isTenantUsingAuthV2Live(authenticated.tenant.id)) {
+  if (isTenantUsingAuthV2Live(authenticated.tenant.id)) {
     return NextResponse.json(
       {
         error: `This team now uses the new secure account sign-in. Open ${getAuthV2SignInPath(authenticated.tenant.loginRoute)} to continue.`
