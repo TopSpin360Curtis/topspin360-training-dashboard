@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import {
   AUTH_COOKIE_NAME,
   AUTH_MODE_COOKIE_NAME,
@@ -14,7 +15,7 @@ import {
 const PUBLIC_PATH_PREFIXES = ["/_next", "/login", "/auth-v2"];
 const PUBLIC_EXACT_PATHS = ["/favicon.ico", "/api/auth/login", "/api/auth/logout", "/api/sheets"];
 
-export async function middleware(request: NextRequest) {
+export default clerkMiddleware(async (_auth, request: NextRequest) => {
   if (!isAuthenticationEnabled()) {
     return NextResponse.next();
   }
@@ -57,7 +58,7 @@ export async function middleware(request: NextRequest) {
   loginUrl.searchParams.set("next", `${pathname}${search}`);
 
   return NextResponse.redirect(loginUrl);
-}
+});
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image).*)"]
