@@ -15,8 +15,8 @@
     "jspdf": "^4.2.1",
     "next": "^15.3.8",
     "papaparse": "5.5.2",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "^19.1.4",
+    "react-dom": "^19.1.4",
     "react-to-print": "3.0.5",
     "recharts": "2.15.1"
   },
