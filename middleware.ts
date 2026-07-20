@@ -13,7 +13,7 @@ import {
 } from "@/lib/auth";
 
 const PUBLIC_PATH_PREFIXES = ["/_next", "/login", "/auth-v2"];
-const PUBLIC_EXACT_PATHS = ["/favicon.ico", "/api/auth/login", "/api/auth/logout", "/api/sheets"];
+const PUBLIC_EXACT_PATHS = ["/", "/favicon.ico", "/api/auth/login", "/api/auth/logout", "/api/sheets"];
 
 function isClerkEnabled() {
   return Boolean(
