@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import ModeLoginScreen from "@/components/ModeLoginScreen";
 import { getTenantByLoginRoute } from "@/lib/auth";
+import { isAuthV2Available, isTenantUsingAuthV2Live } from "@/lib/authV2";
 
 export default async function TenantLoginPage({
   params,
@@ -14,6 +15,10 @@ export default async function TenantLoginPage({
 
   if (!tenant) {
     notFound();
+  }
+
+  if (isAuthV2Available() && isTenantUsingAuthV2Live(tenant.loginRoute)) {
+    redirect(`/auth-v2/${tenant.loginRoute}`);
   }
 
   const resolvedSearchParams = await searchParams;

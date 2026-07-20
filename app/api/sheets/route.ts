@@ -6,6 +6,7 @@ import {
   getTenantConfigById,
   validateAuthCookies
 } from "@/lib/auth";
+import { getClerkAuthenticatedTenant } from "@/lib/authV2";
 import {
   fetchGoogleSheetData,
   fetchPrivateGoogleSheetData,
@@ -20,11 +21,24 @@ const DEFAULT_TEST_SHEET_ID = "1ZWQgwzg1trwPisVNDphVTBMw1g4Ey5ml8RQIVXt3jnQ";
 
 export async function GET(request: NextRequest) {
   try {
-    const authenticatedTenant = await validateAuthCookies({
+    const requestedTenantId = request.nextUrl.searchParams.get("tenantId");
+    const legacyTenant = await validateAuthCookies({
       tenantId: request.cookies.get(AUTH_TENANT_COOKIE_NAME)?.value,
       authToken: request.cookies.get(AUTH_COOKIE_NAME)?.value,
       mode: request.cookies.get(AUTH_MODE_COOKIE_NAME)?.value
     });
+    const authenticatedTenant =
+      legacyTenant ?? (await getClerkAuthenticatedTenant(requestedTenantId));
+
+    if (!authenticatedTenant) {
+      return NextResponse.json(
+        {
+          error: "Unauthorized. Sign in again to access protected dashboard data."
+        },
+        { status: 401 }
+      );
+    }
+
     const tenantConfig = getTenantConfigById(authenticatedTenant?.id);
     const profile: DashboardProfile = tenantConfig?.profile ?? "team";
     const sheetId =

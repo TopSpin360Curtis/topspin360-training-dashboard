@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import AuthV2Provider from "@/components/AuthV2Provider";
+import { isAuthV2Available } from "@/lib/authV2";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,9 +13,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const authV2Enabled = isAuthV2Available();
+
   return (
     <html lang="en">
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        {authV2Enabled ? <AuthV2Provider>{children}</AuthV2Provider> : children}
+      </body>
     </html>
   );
 }
