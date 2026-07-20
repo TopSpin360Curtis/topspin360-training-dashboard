@@ -156,6 +156,38 @@ export function isAuthV2InviteOnly() {
   return !["false", "0", "no", "n", "off"].includes(value);
 }
 
+function getAuthV2LiveTenantIds() {
+  const raw = process.env.AUTH_V2_LIVE_TENANTS?.trim();
+
+  if (!raw) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      raw
+        .split(",")
+        .map((entry) => entry.trim().toLowerCase())
+        .filter(Boolean)
+    )
+  );
+}
+
+export function isTenantUsingAuthV2Live(tenantRouteOrId: string | null | undefined) {
+  if (!tenantRouteOrId) {
+    return false;
+  }
+
+  const resolvedTenant =
+    getTenantByLoginRoute(tenantRouteOrId) ?? getTenantById(tenantRouteOrId);
+
+  if (!resolvedTenant) {
+    return false;
+  }
+
+  return getAuthV2LiveTenantIds().includes(resolvedTenant.id);
+}
+
 export function getAuthV2SignInPath(tenantRoute?: string | null) {
   return tenantRoute ? `/auth-v2/sign-in?tenant=${tenantRoute}` : "/auth-v2/sign-in";
 }

@@ -8,6 +8,7 @@ import {
   isAuthenticationEnabled,
   isDashboardMode
 } from "@/lib/auth";
+import { getAuthV2SignInPath, isAuthV2Available, isTenantUsingAuthV2Live } from "@/lib/authV2";
 import { appendLoginAuditEvent } from "@/lib/loginAudit";
 
 export async function POST(request: NextRequest) {
@@ -52,6 +53,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "Those login details do not match this dashboard route." },
       { status: 401 }
+    );
+  }
+
+  if (isAuthV2Available() && isTenantUsingAuthV2Live(authenticated.tenant.id)) {
+    return NextResponse.json(
+      {
+        error: `This team now uses the new secure account sign-in. Open ${getAuthV2SignInPath(authenticated.tenant.loginRoute)} to continue.`
+      },
+      { status: 409 }
     );
   }
 
