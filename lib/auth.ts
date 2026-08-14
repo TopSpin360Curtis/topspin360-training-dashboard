@@ -241,6 +241,16 @@ function mergeTenantConfigs(
     );
 
     if (existingIndex >= 0) {
+      const existing = merged[existingIndex];
+      merged[existingIndex] = {
+        ...existing,
+        sheetId: tenant.sheetId ?? existing.sheetId,
+        range: tenant.range ?? existing.range,
+        publicSheetId: tenant.publicSheetId ?? existing.publicSheetId,
+        apiKey: tenant.apiKey ?? existing.apiKey,
+        role: tenant.role ?? existing.role,
+        canExport: tenant.canExport ?? existing.canExport
+      };
       continue;
     }
 
