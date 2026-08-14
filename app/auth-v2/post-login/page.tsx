@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
+import TenantUnavailableNotice from "@/components/TenantUnavailableNotice";
 import {
   getAuthV2DashboardPath,
   getAuthV2SignInPath,
   getClerkAuthenticatedTenantForRoute,
   getClerkDashboardAccess,
   isAuthV2Available,
+  isTenantTemporarilyDisabled,
   resolveTenantFromRoute
 } from "@/lib/authV2";
 
@@ -36,6 +38,10 @@ export default async function AuthV2PostLoginPage({ searchParams }: AuthV2PostLo
   }
 
   const requestedTenant = resolveTenantFromRoute(tenantRoute);
+
+  if (requestedTenant && isTenantTemporarilyDisabled(requestedTenant.id)) {
+    return <TenantUnavailableNotice tenantLabel={requestedTenant.label} />;
+  }
 
   if (requestedTenant && access.tenantIds.includes(requestedTenant.id)) {
     redirect(getAuthV2DashboardPath(requestedTenant.loginRoute));

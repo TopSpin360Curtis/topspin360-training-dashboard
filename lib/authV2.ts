@@ -65,6 +65,8 @@ function dedupeTenantIds(values: string[]) {
   return Array.from(new Set(values));
 }
 
+const TEMPORARILY_DISABLED_TENANT_IDS = new Set(["texans"]);
+
 function parseInviteEntry(value: unknown): AuthV2Invite | null {
   if (!value || typeof value !== "object") {
     return null;
@@ -186,6 +188,21 @@ export function isTenantUsingAuthV2Live(tenantRouteOrId: string | null | undefin
   }
 
   return getAuthV2LiveTenantIds().includes(resolvedTenant.id);
+}
+
+export function isTenantTemporarilyDisabled(tenantRouteOrId: string | null | undefined) {
+  if (!tenantRouteOrId) {
+    return false;
+  }
+
+  const resolvedTenant =
+    getTenantByLoginRoute(tenantRouteOrId) ?? getTenantById(tenantRouteOrId);
+
+  if (!resolvedTenant) {
+    return false;
+  }
+
+  return TEMPORARILY_DISABLED_TENANT_IDS.has(resolvedTenant.id);
 }
 
 export function getAuthV2SignInPath(tenantRoute?: string | null) {

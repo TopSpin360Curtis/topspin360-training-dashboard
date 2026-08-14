@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import TenantUnavailableNotice from "@/components/TenantUnavailableNotice";
 import {
   getAuthV2SignInPath,
   getAuthV2SignUpPath,
   isAuthV2Available,
   isAuthV2InviteOnly,
+  isTenantTemporarilyDisabled,
   resolveTenantFromRoute
 } from "@/lib/authV2";
 
@@ -18,6 +20,10 @@ export default async function AuthV2TenantPage({ params }: AuthV2TenantPageProps
 
   if (!tenant) {
     notFound();
+  }
+
+  if (isTenantTemporarilyDisabled(tenant.id)) {
+    return <TenantUnavailableNotice tenantLabel={tenant.label} />;
   }
 
   const authReady = isAuthV2Available();

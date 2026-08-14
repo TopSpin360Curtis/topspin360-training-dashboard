@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import DashboardShell from "@/components/DashboardShell";
+import TenantUnavailableNotice from "@/components/TenantUnavailableNotice";
 import {
   getAuthV2SignInPath,
   getClerkAuthenticatedTenantForRoute,
   isAuthV2Available,
+  isTenantTemporarilyDisabled,
   resolveTenantFromRoute
 } from "@/lib/authV2";
 
@@ -18,6 +20,10 @@ export default async function AuthV2DashboardPage({ params }: AuthV2DashboardPag
 
   if (!requestedTenant) {
     notFound();
+  }
+
+  if (isTenantTemporarilyDisabled(requestedTenant.id)) {
+    return <TenantUnavailableNotice tenantLabel={requestedTenant.label} />;
   }
 
   if (!isAuthV2Available()) {

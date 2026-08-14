@@ -7,6 +7,7 @@ import {
   validateAuthCookies
 } from "@/lib/auth";
 import { getClerkAuthenticatedTenant } from "@/lib/authV2";
+import { isTenantTemporarilyDisabled } from "@/lib/authV2";
 import {
   fetchGoogleSheetData,
   fetchPrivateGoogleSheetData,
@@ -36,6 +37,15 @@ export async function GET(request: NextRequest) {
           error: "Unauthorized. Sign in again to access protected dashboard data."
         },
         { status: 401 }
+      );
+    }
+
+    if (isTenantTemporarilyDisabled(authenticatedTenant.id)) {
+      return NextResponse.json(
+        {
+          error: `${authenticatedTenant.label} dashboard is temporarily unavailable while the linked data source is being verified.`
+        },
+        { status: 503 }
       );
     }
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getConfiguredTenants, getLoginPathForRoute } from "@/lib/auth";
+import { isTenantTemporarilyDisabled } from "@/lib/authV2";
 
 type PublicTeamChooserProps = {
   title?: string;
@@ -12,6 +13,7 @@ export default function PublicTeamChooser({
 }: PublicTeamChooserProps) {
   const tenants = getConfiguredTenants()
     .filter((tenant) => tenant.profile === "team")
+    .filter((tenant) => !isTenantTemporarilyDisabled(tenant.id))
     .filter(
       (tenant, index, entries) =>
         entries.findIndex((entry) => entry.loginRoute === tenant.loginRoute) === index

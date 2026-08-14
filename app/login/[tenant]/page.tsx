@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import ModeLoginScreen from "@/components/ModeLoginScreen";
+import TenantUnavailableNotice from "@/components/TenantUnavailableNotice";
 import { getTenantByLoginRoute } from "@/lib/auth";
-import { isTenantUsingAuthV2Live } from "@/lib/authV2";
+import { isTenantTemporarilyDisabled, isTenantUsingAuthV2Live } from "@/lib/authV2";
 
 export default async function TenantLoginPage({
   params,
@@ -15,6 +16,10 @@ export default async function TenantLoginPage({
 
   if (!tenant) {
     notFound();
+  }
+
+  if (isTenantTemporarilyDisabled(tenant.id)) {
+    return <TenantUnavailableNotice tenantLabel={tenant.label} />;
   }
 
   if (isTenantUsingAuthV2Live(tenant.loginRoute)) {

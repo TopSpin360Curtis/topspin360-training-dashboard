@@ -4,8 +4,10 @@ import {
   getAuthV2SignInPath,
   isAuthV2Available,
   isAuthV2InviteOnly,
+  isTenantTemporarilyDisabled,
   resolveTenantFromRoute
 } from "@/lib/authV2";
+import TenantUnavailableNotice from "@/components/TenantUnavailableNotice";
 
 type AuthV2SignUpPageProps = {
   searchParams: Promise<{ email?: string; tenant?: string }>;
@@ -29,6 +31,10 @@ export default async function AuthV2SignUpPage({ searchParams }: AuthV2SignUpPag
   }
 
   const resolvedTenant = resolveTenantFromRoute(tenant ?? null);
+  if (resolvedTenant && isTenantTemporarilyDisabled(resolvedTenant.id)) {
+    return <TenantUnavailableNotice tenantLabel={resolvedTenant.label} />;
+  }
+
   const inviteOnly = isAuthV2InviteOnly();
   const invite = getAuthV2InviteForEmail(email ?? null, tenant ?? null);
 

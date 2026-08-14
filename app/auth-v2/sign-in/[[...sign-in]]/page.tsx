@@ -1,5 +1,11 @@
 import { SignIn } from "@clerk/nextjs";
-import { getAuthV2SignUpPath, isAuthV2Available } from "@/lib/authV2";
+import TenantUnavailableNotice from "@/components/TenantUnavailableNotice";
+import {
+  getAuthV2SignUpPath,
+  isAuthV2Available,
+  isTenantTemporarilyDisabled,
+  resolveTenantFromRoute
+} from "@/lib/authV2";
 
 type AuthV2SignInPageProps = {
   searchParams: Promise<{ tenant?: string }>;
@@ -7,6 +13,11 @@ type AuthV2SignInPageProps = {
 
 export default async function AuthV2SignInPage({ searchParams }: AuthV2SignInPageProps) {
   const { tenant } = await searchParams;
+  const resolvedTenant = resolveTenantFromRoute(tenant ?? null);
+
+  if (resolvedTenant && isTenantTemporarilyDisabled(resolvedTenant.id)) {
+    return <TenantUnavailableNotice tenantLabel={resolvedTenant.label} />;
+  }
 
   if (!isAuthV2Available()) {
     return (
