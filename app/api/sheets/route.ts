@@ -3,6 +3,7 @@ import {
   AUTH_COOKIE_NAME,
   AUTH_MODE_COOKIE_NAME,
   AUTH_TENANT_COOKIE_NAME,
+  getTenantById,
   getTenantConfigById,
   validateAuthCookies
 } from "@/lib/auth";
@@ -23,13 +24,21 @@ const DEFAULT_TEST_SHEET_ID = "1ZWQgwzg1trwPisVNDphVTBMw1g4Ey5ml8RQIVXt3jnQ";
 export async function GET(request: NextRequest) {
   try {
     const requestedTenantId = request.nextUrl.searchParams.get("tenantId");
+    const requestedTenant = getTenantById(requestedTenantId);
     const legacyTenant = await validateAuthCookies({
       tenantId: request.cookies.get(AUTH_TENANT_COOKIE_NAME)?.value,
       authToken: request.cookies.get(AUTH_COOKIE_NAME)?.value,
       mode: request.cookies.get(AUTH_MODE_COOKIE_NAME)?.value
     });
-    const authenticatedTenant =
-      legacyTenant ?? (await getClerkAuthenticatedTenant(requestedTenantId));
+    const clerkTenant = await getClerkAuthenticatedTenant(requestedTenant?.id ?? null);
+
+    const authenticatedTenant = requestedTenant
+      ? clerkTenant?.id === requestedTenant.id
+        ? clerkTenant
+        : legacyTenant?.id === requestedTenant.id
+          ? legacyTenant
+          : null
+      : legacyTenant ?? clerkTenant;
 
     if (!authenticatedTenant) {
       return NextResponse.json(
