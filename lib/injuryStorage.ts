@@ -8,7 +8,7 @@ import type {
 
 const INJURY_STORAGE_KEY = "topspin360-player-injuries";
 
-const TEAM_DEFAULT_INJURIES: PlayerInjuryMap = {
+const LIONS_DEFAULT_INJURIES: PlayerInjuryMap = {
   "Terrion Arnold": [
     {
       date: "2025-11-16",
@@ -182,13 +182,62 @@ function mergeInjuryMaps(base: PlayerInjuryMap, custom: PlayerInjuryMap) {
   return merged;
 }
 
+function getInjurySignature(entry: PlayerInjury) {
+  return `${entry.date}-${entry.type}-${entry.label ?? ""}-${entry.weekLabel ?? ""}`;
+}
+
+function stripSeededInjuries(
+  injuries: PlayerInjuryMap,
+  seededInjuries: PlayerInjuryMap
+): PlayerInjuryMap {
+  if (!Object.keys(seededInjuries).length) {
+    return injuries;
+  }
+
+  return Object.entries(injuries).reduce<PlayerInjuryMap>((accumulator, [player, entries]) => {
+    const seededEntries = seededInjuries[player] ?? [];
+
+    if (!seededEntries.length) {
+      accumulator[player] = entries;
+      return accumulator;
+    }
+
+    const seededSignatures = new Set(seededEntries.map(getInjurySignature));
+    const filteredEntries = entries.filter((entry) => !seededSignatures.has(getInjurySignature(entry)));
+
+    if (filteredEntries.length) {
+      accumulator[player] = filteredEntries;
+    }
+
+    return accumulator;
+  }, {});
+}
+
+function getTenantIdFromNamespace(namespace?: string) {
+  if (!namespace?.startsWith("tenant-")) {
+    return null;
+  }
+
+  return namespace.slice("tenant-".length).trim().toLowerCase() || null;
+}
+
 function getDefaultPlayerInjuries(profile: DashboardProfile, namespace?: string): PlayerInjuryMap {
-  if (namespace?.startsWith("tenant-")) {
-    return profile === "team" ? TEAM_DEFAULT_INJURIES : TEST_DEFAULT_INJURIES;
+  const tenantId = getTenantIdFromNamespace(namespace);
+
+  if (tenantId) {
+    if (tenantId === "lions") {
+      return LIONS_DEFAULT_INJURIES;
+    }
+
+    if (tenantId === "test") {
+      return TEST_DEFAULT_INJURIES;
+    }
+
+    return {};
   }
 
   if (profile === "team") {
-    return TEAM_DEFAULT_INJURIES;
+    return LIONS_DEFAULT_INJURIES;
   }
 
   return TEST_DEFAULT_INJURIES;
@@ -204,6 +253,9 @@ function getInjuryStorageNamespace(profile: DashboardProfile, namespace?: string
 
 export function loadPlayerInjuries(profile: DashboardProfile, namespace?: string): PlayerInjuryMap {
   const defaults = getDefaultPlayerInjuries(profile, namespace);
+  const tenantId = getTenantIdFromNamespace(namespace);
+  const disallowedSeededInjuries =
+    tenantId && tenantId !== "lions" ? LIONS_DEFAULT_INJURIES : {};
 
   if (typeof window === "undefined") {
     return defaults;
@@ -219,7 +271,13 @@ export function loadPlayerInjuries(profile: DashboardProfile, namespace?: string
   try {
     const parsed = JSON.parse(stored) as unknown;
     const normalized = normalizeStoredInjuryMap(parsed);
-    return mergeInjuryMaps(defaults, normalized);
+    const sanitized = stripSeededInjuries(normalized, disallowedSeededInjuries);
+
+    if (JSON.stringify(sanitized) !== JSON.stringify(normalized)) {
+      window.localStorage.setItem(storageKey, JSON.stringify(sanitized));
+    }
+
+    return mergeInjuryMaps(defaults, sanitized);
   } catch {
     window.localStorage.removeItem(storageKey);
     return defaults;
