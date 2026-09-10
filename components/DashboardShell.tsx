@@ -54,6 +54,7 @@ import {
   getPlayerStats,
   getPlayerTrendSeries,
   getRiskBand,
+  getRiskBandMeta,
   getTodayIso,
   getTeamAverageRFD,
   getTeamLeaderboard,
@@ -1114,7 +1115,7 @@ export default function DashboardShell({
 
   const topPerformers = getTopPerformers(filteredData).map((row) => ({
     label: row.player,
-    value: `Best ${formatNumber(row.bestRFD)} • ${row.riskBand === "lowest" ? "Lowest Risk" : row.riskBand === "lower" ? "Lower Risk" : row.riskBand === "moderate" ? "Moderate Risk" : "High Risk"}`
+    value: `Best ${formatNumber(row.bestRFD)} • ${getRiskBandMeta(row.riskBand).label}`
   }));
   const mostSessions = getMostSessions(filteredData).map((row) => ({
     label: row.player,

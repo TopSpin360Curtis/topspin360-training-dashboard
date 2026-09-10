@@ -44,26 +44,26 @@ export const RISK_BAND_META: Record<
   }
 > = {
   high: {
-    label: "High Risk",
-    shortLabel: "High",
+    label: "Very High Risk",
+    shortLabel: "Very High",
     description: "0.00 to 11.00",
     tones: "bg-rose-50 text-rose-700 ring-rose-200"
   },
   moderate: {
-    label: "Moderate Risk",
-    shortLabel: "Moderate",
+    label: "High Risk",
+    shortLabel: "High",
     description: "11.00 to 22.00",
     tones: "bg-amber-50 text-amber-700 ring-amber-200"
   },
   lower: {
-    label: "Lower Risk",
-    shortLabel: "Lower",
+    label: "Moderate Risk",
+    shortLabel: "Moderate",
     description: "22.00 to 33.00",
     tones: "bg-emerald-50 text-emerald-700 ring-emerald-200"
   },
   lowest: {
-    label: "Lowest Risk",
-    shortLabel: "Lowest",
+    label: "Lower Risk",
+    shortLabel: "Lower",
     description: "33.00+",
     tones: "bg-sky-50 text-sky-700 ring-sky-200"
   }

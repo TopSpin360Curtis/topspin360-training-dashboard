@@ -12,7 +12,7 @@ import {
   YAxis
 } from "recharts";
 import CoachNotesPanel from "@/components/CoachNotesPanel";
-import { formatNumber, getOrderedWeekdays, getRiskBand } from "@/lib/dataUtils";
+import { formatNumber, getOrderedWeekdays, getRiskBandMeta } from "@/lib/dataUtils";
 import type { AutoInsight, CoachNote, DayOfWeekPlayerHeatmapRow, DayOfWeekStat } from "@/lib/types";
 
 type DayOfWeekViewProps = {
@@ -359,13 +359,7 @@ export default function DayOfWeekView({
                 <td className="px-4 py-4 text-slate-700">
                   {formatNumber(row.avgRFD)}
                   <span className="ml-2 inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
-                    {getRiskBand(row.avgRFD) === "lowest"
-                      ? "Lowest Risk"
-                      : getRiskBand(row.avgRFD) === "lower"
-                        ? "Lower Risk"
-                        : getRiskBand(row.avgRFD) === "moderate"
-                          ? "Moderate Risk"
-                          : "High Risk"}
+                    {getRiskBandMeta(row.avgRFD).label}
                   </span>
                 </td>
                 <td className="px-4 py-4 text-slate-700">{formatNumber(row.avgCCW)}</td>
