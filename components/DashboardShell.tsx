@@ -94,7 +94,14 @@ type CohortKey =
   | "below-average"
   | "high-frequency"
   | "low-frequency";
-type DatePreset = "last7" | "last30" | "season" | "season2024" | "season2023" | "allTime";
+type DatePreset =
+  | "last7"
+  | "last30"
+  | "season2026"
+  | "season"
+  | "season2024"
+  | "season2023"
+  | "allTime";
 
 const BENCHMARK_STORAGE_KEY = "topspin360-benchmarks";
 const DASHBOARD_DATA_STORAGE_KEY = "topspin360-dashboard-data";
@@ -943,6 +950,12 @@ export default function DashboardShell({
 
   function handleApplyDatePreset(preset: DatePreset) {
     const anchor = getTodayIso();
+
+    if (preset === "season2026") {
+      setStartDate("2026-03-01");
+      setEndDate("2027-03-31");
+      return;
+    }
 
     if (preset === "season") {
       setStartDate("2025-03-01");
