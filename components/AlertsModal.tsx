@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { formatNumber } from "@/lib/dataUtils";
 import type { PlayerAlert } from "@/lib/types";
 
@@ -18,32 +20,65 @@ export default function AlertsModal({
   onViewTrends,
   onAddNote
 }: AlertsModalProps) {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, onClose]);
+
   if (!open) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6">
-      <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-[2rem] border border-white/70 bg-white p-6 shadow-soft">
-        <div className="flex items-center justify-between gap-4">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto p-4 sm:p-6">
+      <button
+        type="button"
+        aria-label="Close alerts"
+        className="absolute inset-0 bg-slate-950/40"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="alerts-dialog-title"
+        className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-soft sm:max-h-[calc(100dvh-3rem)]"
+      >
+        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-100 bg-white p-5 sm:p-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-blue/70">
               Alerts
             </p>
-            <h2 className="mt-2 text-2xl font-semibold text-brand-ink">
+            <h2 id="alerts-dialog-title" className="mt-2 text-2xl font-semibold text-brand-ink">
               High Priority Player Digest
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-11 rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+            className="min-h-11 shrink-0 rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
           >
-            Close
+            Close <span aria-hidden="true">×</span>
           </button>
         </div>
 
-        <div className="mt-6 space-y-4">
+        <div className="space-y-4 overflow-y-auto p-5 sm:p-6">
           {alerts.length ? (
             alerts.map((alert) => (
               <div
